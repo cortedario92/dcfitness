@@ -41,7 +41,7 @@
   #hero { min-height: 100vh; position: relative; overflow: hidden; }
   .hero-bg { position: absolute; inset: 0; background: linear-gradient(135deg, #0a0a0a 40%, #0f0f0f 100%); }
   .hero-grid { position: absolute; inset: 0; opacity: 0.06; background-image: linear-gradient(var(--accent) 1px, transparent 1px), linear-gradient(90deg, var(--accent) 1px, transparent 1px); background-size: 60px 60px; }
-  .hero-content { position: relative; z-index: 2; min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 4rem; padding: 8rem 3rem 4rem; max-width: 1200px; margin: 0 auto; }
+  .hero-content { position: relative; z-index: 2; min-height: 100vh; display: flex; align-items: center; padding: 8rem 3rem 4rem; max-width: 800px; margin: 0 auto; }
   .hero-tag { display: inline-block; background: var(--accent); color: var(--black); font-size: 0.7rem; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; padding: 0.3rem 0.8rem; margin-bottom: 1.5rem; }
   .hero-title { font-family: 'Bebas Neue', sans-serif; font-size: clamp(3.5rem, 7vw, 6.5rem); line-height: 0.95; letter-spacing: 2px; margin-bottom: 1.5rem; }
   .hero-title span { color: var(--accent); }
@@ -205,8 +205,18 @@
   .dash-note-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); font-weight: 700; margin-bottom: 0.5rem; }
   .dash-note-text { font-size: 0.9rem; color: #999; line-height: 1.65; }
   .bloque-label { font-size: 0.72rem; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); font-weight: 700; margin: 1.5rem 0 0.8rem; }
-  .rutina-block { margin-bottom: 2.5rem; border-bottom: 1px solid #141414; padding-bottom: 2.5rem; }
-  .rutina-block:last-child { border-bottom: none; }
+  .rutina-block { margin-bottom: 2rem; background: var(--gray); border: 1px solid #252525; padding: 2rem; position: relative; }
+  .rutina-block::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--accent); }
+  .bloque-section { background: #0f0f0f; border: 1px solid #1e1e1e; padding: 1.2rem; margin-top: 1rem; }
+  .ex-num-circle { width: 28px; height: 28px; border-radius: 50%; background: #141414; border: 1px solid #2a2a2a; display: inline-flex; align-items: center; justify-content: center; font-size: 0.68rem; color: #555; font-weight: 700; font-family: 'DM Sans', sans-serif; }
+  .yt-link-red { display: inline-block; background: rgba(255,77,77,0.1); border: 1px solid rgba(255,77,77,0.3); color: #ff6b6b; font-size: 0.72rem; padding: 0.25rem 0.55rem; text-decoration: none; transition: background .2s; white-space: nowrap; }
+  .yt-link-red:hover { background: rgba(255,77,77,0.2); color: #ff6b6b; }
+  .grupo-tab-btn { background: none; border: 1px solid #2a2a2a; color: #888; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 0.5rem 1.2rem; transition: all .2s; }
+  .grupo-tab-btn:hover { border-color: #444; color: var(--white); }
+  .grupo-tab-btn.active { background: var(--accent); color: var(--black); border-color: var(--accent); }
+  .clase-tab-btn { background: none; border: 1px solid #1e1e1e; color: #666; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.72rem; letter-spacing: 1px; text-transform: uppercase; padding: 0.4rem 1rem; transition: all .2s; }
+  .clase-tab-btn:hover { border-color: #2a2a2a; color: #999; }
+  .clase-tab-btn.active { border-color: var(--accent); color: var(--accent); }
 
   /* ADMIN */
   #admin-page { min-height: 100vh; background: #0d0d0d; }
@@ -230,7 +240,7 @@
   .admin-field label { display: block; font-size: 0.68rem; letter-spacing: 1px; text-transform: uppercase; color: #666; margin-bottom: 0.4rem; }
   .admin-field input, .admin-field textarea, .admin-field select {
     width: 100%; background: var(--black); border: 1px solid #2a2a2a; color: var(--white);
-    font-family: 'DM Sans', sans-serif; font-size: 0.88rem; padding: 0.75rem 1rem; outline: none; transition: border-color .2s;
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem; padding: 0.85rem 1rem; outline: none; transition: border-color .2s;
   }
   .admin-field input:focus, .admin-field textarea:focus, .admin-field select:focus { border-color: var(--accent); }
   .admin-field textarea { resize: vertical; min-height: 70px; }
@@ -276,7 +286,7 @@
   @media (max-width: 768px) {
     nav { padding: 1rem 1.5rem; }
     .nav-links { display: none; }
-    .hero-content { grid-template-columns: 1fr; padding: 7rem 1.5rem 3rem; gap: 2rem; }
+    .hero-content { padding: 7rem 1.5rem 3rem; }
     .services-grid, .testi-grid { grid-template-columns: 1fr; }
     .about-inner, .resenas-layout { grid-template-columns: 1fr; }
     .dash-cards { grid-template-columns: 1fr 1fr; }
@@ -315,31 +325,6 @@
           <button class="btn-primary" onclick="scrollToId('contacto')">Empezá hoy</button>
           <button class="btn-ghost" onclick="showPage('login-page')">Ver mis rutinas</button>
         </div>
-        <div class="hero-stats">
-          <div><div class="stat-num">+150</div><div class="stat-label">Alumnos</div></div>
-          <div><div class="stat-num">5</div><div class="stat-label">Años de exp.</div></div>
-          <div><div class="stat-num">98%</div><div class="stat-label">Satisfacción</div></div>
-        </div>
-      </div>
-      <div class="hero-visual">
-        <div class="trainer-card">
-          <div class="trainer-avatar">DC</div>
-          <div class="trainer-name">Darío Corte</div>
-          <div class="trainer-title">Personal Trainer · DC Fitness</div>
-          <div class="trainer-badges">
-            <span class="badge">Funcional</span>
-            <span class="badge">Fuerza e hipertrofia</span>
-            <span class="badge">Pérdida de peso</span>
-            <span class="badge">CrossFit</span>
-          </div>
-        </div>
-        <div class="mini-routine">
-          <div class="mini-routine-title">✦ Rutina de esta semana</div>
-          <div class="routine-row"><span>Plancha Baja</span><span>20"</span></div>
-          <div class="routine-row"><span>Abdominales Bolita</span><span>3 series</span></div>
-          <div class="routine-row"><span>Sprawl</span><span>× 5</span></div>
-          <div class="routine-row"><span>Burpee</span><span>× 10</span></div>
-        </div>
       </div>
     </div>
   </section>
@@ -363,8 +348,8 @@
         </div>
         <div class="service-card">
           <div class="service-icon">🔥</div>
-          <div class="service-name">CrossFit & Funcional</div>
-          <div class="service-desc">Entrenamiento de alta intensidad funcional. Mejorá tu rendimiento, resistencia y composición corporal.</div>
+          <div class="service-name">Atletas CrossFit / Hyrox</div>
+          <div class="service-desc">Programación específica para atletas de CrossFit y Hyrox. Potenciá tu rendimiento competitivo con planes diseñados para tu deporte.</div>
           <div class="service-price">Consultá <span>/ mes</span></div>
         </div>
       </div>
@@ -379,12 +364,7 @@
         <h2 class="section-title" style="margin-bottom:1.5rem">DARÍO<br>CORTE</h2>
         <p>Soy personal trainer con foco en entrenamiento funcional, fuerza, pérdida de peso y CrossFit. Mi objetivo es que cada alumno logre resultados reales con un plan adaptado a su cuerpo, sus tiempos y sus metas.</p>
         <p>Trabajo con personas de todos los niveles — desde quienes arrancan desde cero hasta atletas que buscan optimizar su rendimiento.</p>
-        <div class="about-skills">
-          <div class="skill-row"><div class="skill-label"><span>Entrenamiento Funcional</span><span>95%</span></div><div class="skill-bar"><div class="skill-fill" style="width:95%"></div></div></div>
-          <div class="skill-row"><div class="skill-label"><span>Fuerza e Hipertrofia</span><span>90%</span></div><div class="skill-bar"><div class="skill-fill" style="width:90%"></div></div></div>
-          <div class="skill-row"><div class="skill-label"><span>Pérdida de Peso</span><span>92%</span></div><div class="skill-bar"><div class="skill-fill" style="width:92%"></div></div></div>
-          <div class="skill-row"><div class="skill-label"><span>CrossFit</span><span>88%</span></div><div class="skill-bar"><div class="skill-fill" style="width:88%"></div></div></div>
-        </div>
+
       </div>
     </div>
   </section>
@@ -419,30 +399,6 @@
           <div class="resenas-lista" id="resenas-lista">
             <div class="resenas-loading">Cargando reseñas...</div>
           </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section id="testimonios">
-    <div class="testimonios-inner">
-      <div class="section-label">✦ Destacados</div>
-      <h2 class="section-title">TESTIMONIOS</h2>
-      <div class="testi-grid">
-        <div class="testi-card">
-          <div class="testi-stars">★★★★★</div>
-          <p class="testi-text">"Con Darío bajé 9 kilos en 3 meses. Las rutinas online son muy prácticas y el panel con los videos me ayudó un montón."</p>
-          <div class="testi-author">María G.</div><div class="testi-meta">Plan Online · 6 meses</div>
-        </div>
-        <div class="testi-card">
-          <div class="testi-stars">★★★★★</div>
-          <p class="testi-text">"Venía sin experiencia y me armó un plan progresivo increíble. Hoy entreno 4 veces por semana con más energía que nunca."</p>
-          <div class="testi-author">Lucas M.</div><div class="testi-meta">Presencial · 1 año</div>
-        </div>
-        <div class="testi-card">
-          <div class="testi-stars">★★★★★</div>
-          <p class="testi-text">"El CrossFit con Darío es otro nivel. En 4 meses mejoré mi rendimiento y perdí grasa sin perder músculo."</p>
-          <div class="testi-author">Sebastián R.</div><div class="testi-meta">CrossFit · 4 meses</div>
         </div>
       </div>
     </div>
@@ -550,9 +506,10 @@
         <div class="admin-form" id="form-nueva-rutina" style="display:none">
           <div class="admin-form-title">Nueva rutina</div>
           <div class="admin-row">
-            <div class="admin-field"><label>Título</label><input type="text" id="nr-titulo" placeholder="Ej: Fuerza Tren Superior" /></div>
-            <div class="admin-field"><label>Día / Período</label><input type="text" id="nr-dia" placeholder="Ej: Lunes, Semana 1" /></div>
+            <div class="admin-field"><label>Lítulo</label><input type="text" id="nr-titulo" placeholder="Ej: Fuerza Tren Superior" /></div>
+            <div class="admin-field"><label>Día / Período</label><input type="text" id="nr-dia" placeholder="Ej: Lunes, Clase 1" /></div>
           </div>
+          <div class="admin-field"><label>Grupo (opcional)</label><input type="text" id="nr-grupo" placeholder="Ej: MES 1, MES 2" /></div>
           <div class="admin-field"><label>Notas para el alumno</label><textarea id="nr-notas" placeholder="Indicaciones, foco de la semana, etc."></textarea></div>
           <div style="display:flex;gap:0.8rem;margin-top:0.5rem">
             <button class="btn-accent" onclick="crearRutina()">Guardar rutina</button>
@@ -671,6 +628,33 @@ async function mostrarDashboard(user) {
   showPage('dashboard');
 }
 
+function renderRutinaCard(r) {
+  const bloques = (r.bloques || []).sort((a, b) => a.orden - b.orden);
+  return `<div class="rutina-block">
+    <div class="routine-header">
+      <div><div class="routine-title">${esc(r.titulo.toUpperCase())}</div><div class="routine-week">${esc(r.dia)}</div></div>
+    </div>
+    ${r.notas ? `<div class="dash-note"><div class="dash-note-label">📝 Nota de Darío</div><div class="dash-note-text">${esc(r.notas)}</div></div>` : ''}
+    ${bloques.map(b => renderBloqueAlumno(b)).join('')}
+  </div>`;
+}
+
+function selGrupoTab(gi, btn) {
+  document.querySelectorAll('.grupo-section').forEach((s, i) => { s.style.display = i === gi ? 'block' : 'none'; });
+  document.querySelectorAll('.grupo-tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function selClaseTab(gi, rutinaId, btn) {
+  const section = document.getElementById('grupo-section-' + gi);
+  if (!section) return;
+  section.querySelectorAll('.clase-content').forEach(s => s.style.display = 'none');
+  section.querySelectorAll('.clase-tab-btn').forEach(b => b.classList.remove('active'));
+  const c = document.getElementById('clase-content-' + rutinaId);
+  if (c) c.style.display = 'block';
+  btn.classList.add('active');
+}
+
 function renderDashboard(rutinas) {
   const container = document.getElementById('dash-rutinas-container');
   const totalBloques = rutinas.reduce((s, r) => s + (r.bloques || []).length, 0);
@@ -682,50 +666,66 @@ function renderDashboard(rutinas) {
     container.innerHTML = '<div style="text-align:center;color:#444;padding:3rem 0;border:1px dashed #1e1e1e">Tu entrenador aún no cargó rutinas. ¡Pronto aparecerán acá!</div>';
     return;
   }
-  container.innerHTML = rutinas.map(r => {
-    const bloques = (r.bloques || []).sort((a, b) => a.orden - b.orden);
-    return `<div class="rutina-block">
-      <div class="routine-header">
-        <div><div class="routine-title">${esc(r.titulo.toUpperCase())}</div><div class="routine-week">${esc(r.dia)}</div></div>
-      </div>
-      ${r.notas ? `<div class="dash-note"><div class="dash-note-label">📝 Nota de Darío</div><div class="dash-note-text">${esc(r.notas)}</div></div>` : ''}
-      ${bloques.map(b => renderBloqueAlumno(b)).join('')}
+  const conGrupos = rutinas.some(r => r.grupo);
+  if (!conGrupos) {
+    container.innerHTML = rutinas.map(r => renderRutinaCard(r)).join('');
+    return;
+  }
+  // Group navigation
+  const grupos = [...new Set(rutinas.filter(r => r.grupo).map(r => r.grupo))].sort();
+  const navHTML = `<div style="position:sticky;top:56px;z-index:40;background:#0d0d0d;padding:0.8rem 0;border-bottom:1px solid #1e1e1e;margin-bottom:1.5rem">
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+      ${grupos.map((g, i) => `<button class="grupo-tab-btn${i===0?' active':''}" onclick="selGrupoTab(${i},this)">${esc(g)}</button>`).join('')}
+    </div>
+  </div>`;
+  const sectionsHTML = grupos.map((g, gi) => {
+    const grupoRutinas = rutinas.filter(r => r.grupo === g).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    const claseNav = `<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1.5rem">
+      ${grupoRutinas.map((r, ri) => `<button class="clase-tab-btn${ri===0?' active':''}" onclick="selClaseTab(${gi},${r.id},this)">${esc(r.titulo)}</button>`).join('')}
     </div>`;
+    const clasesHTML = grupoRutinas.map((r, ri) => `
+      <div class="clase-content" id="clase-content-${r.id}" style="${ri!==0?'display:none':''}">
+        ${renderRutinaCard(r)}
+      </div>`).join('');
+    return `<div class="grupo-section" id="grupo-section-${gi}" style="${gi!==0?'display:none':''}">${claseNav}${clasesHTML}</div>`;
   }).join('');
+  container.innerHTML = navHTML + sectionsHTML;
 }
 
 function renderBloqueAlumno(b) {
   const tipo = b.tipo || 'libre';
   const ejercicios = (b.ejercicios || []).sort((a, c) => a.orden - c.orden);
-  const tipoColors = { calor:'#f5a623', musculacion:'#4a9eff', amrap:'var(--green)', emom:'var(--green)', tabata:'#c084fc', chipper:'var(--red)', libre:'#888' };
-  const color = tipoColors[tipo] || '#888';
   let extraInfo = '';
   if (tipo === 'musculacion' && b.variante) extraInfo = `<span style="font-size:0.72rem;color:#777;font-style:italic">${esc(b.variante)}</span>`;
   if (b.duracion) extraInfo += ` <span style="font-size:0.72rem;color:var(--accent);font-weight:700">${esc(b.duracion)}</span>`;
   let thead = '', tbody = '';
+  const ytBtn = (url) => url ? `<a href="${esc(url)}" target="_blank" class="yt-link-red">▶ YT</a>` : '—';
+  const numCircle = (i) => `<div class="ex-num-circle">${String(i+1).padStart(2,'0')}</div>`;
   if (tipo === 'musculacion') {
     thead = '<tr><th>#</th><th>Ejercicio</th><th>Series × Reps</th><th>Peso</th><th>Tutorial</th></tr>';
     tbody = ejercicios.map((e, i) => {
       const peso = e.notas?.startsWith('Peso:') ? e.notas.replace('Peso:','').trim() : (e.notas || '');
-      return `<tr><td class="ex-num">0${i+1}</td><td><span class="ex-name">${esc(e.nombre)}</span></td><td><span class="ex-amount">${e.series ? e.series+' × ':'' }${esc(e.reps||'')}</span></td><td style="color:var(--accent);font-size:0.85rem">${esc(peso)}</td><td class="ex-link">${e.video_url?`<a href="${esc(e.video_url)}" target="_blank">▶ Ver</a>`:'—'}</td></tr>`;
+      return `<tr><td>${numCircle(i)}</td><td><span class="ex-name">${esc(e.nombre)}</span></td><td><span class="ex-amount">${e.series ? e.series+' × ':'' }${esc(e.reps||'')}</span></td><td style="color:#999;font-size:0.85rem">${esc(peso)}</td><td>${ytBtn(e.video_url)}</td></tr>`;
     }).join('');
   } else if (tipo === 'emom') {
     thead = '<tr><th>Minuto</th><th>Ejercicio</th><th>Reps</th><th>Tutorial</th></tr>';
     tbody = ejercicios.map((e, i) => {
       const min = (e.notas && !e.notas.startsWith('Peso:')) ? e.notas : `Min ${i+1}`;
-      return `<tr><td style="font-size:0.75rem;color:var(--accent);font-weight:700">${esc(min)}</td><td><span class="ex-name">${esc(e.nombre)}</span></td><td><span class="ex-amount">${esc(e.reps||'')}</span></td><td class="ex-link">${e.video_url?`<a href="${esc(e.video_url)}" target="_blank">▶ Ver</a>`:'—'}</td></tr>`;
+      return `<tr><td style="font-size:0.75rem;color:var(--accent);font-weight:700">${esc(min)}</td><td><span class="ex-name">${esc(e.nombre)}</span></td><td><span class="ex-amount">${esc(e.reps||'')}</span></td><td>${ytBtn(e.video_url)}</td></tr>`;
     }).join('');
   } else {
     const repLabel = tipo === 'chipper' ? 'Cantidad' : 'Reps / Tiempo';
     thead = `<tr><th>#</th><th>Ejercicio</th><th>${repLabel}</th><th>Tutorial</th></tr>`;
-    tbody = ejercicios.map((e, i) => `<tr><td class="ex-num">0${i+1}</td><td><span class="ex-name">${esc(e.nombre)}</span></td><td><span class="ex-amount">${esc(e.reps||'')}</span></td><td class="ex-link">${e.video_url?`<a href="${esc(e.video_url)}" target="_blank">▶ Ver</a>`:'—'}</td></tr>`).join('');
+    tbody = ejercicios.map((e, i) => `<tr><td>${numCircle(i)}</td><td><span class="ex-name">${esc(e.nombre)}</span></td><td><span class="ex-amount">${esc(e.reps||'')}</span></td><td>${ytBtn(e.video_url)}</td></tr>`).join('');
   }
-  return `<div style="margin-top:1.5rem">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:0.8rem;flex-wrap:wrap">
-      <div class="bloque-label" style="color:${color};margin:0">⬡ ${esc(b.nombre)}</div>${extraInfo}
+  return `<div class="bloque-section">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:0.8rem;flex-wrap:wrap">
+      <span class="tipo-badge ${tipo}">${TIPO_LABELS[tipo]||tipo}</span>
+      <span style="font-weight:700;font-size:0.88rem">${esc(b.nombre)}</span>
+      ${extraInfo}
     </div>
     ${b.descanso ? `<div style="font-size:0.75rem;color:#666;margin-bottom:8px">⏱ Descanso: ${esc(b.descanso)}</div>` : ''}
-    <table class="exercise-table"><thead>${thead}</thead><tbody>${tbody}</tbody></table>
+    <div style="overflow-x:auto"><table class="exercise-table" style="min-width:480px"><thead>${thead}</thead><tbody>${tbody}</tbody></table></div>
     ${b.notas ? `<div class="dash-note" style="margin-top:1rem"><div class="dash-note-label">📝 Nota</div><div class="dash-note-text">${esc(b.notas)}</div></div>` : ''}
   </div>`;
 }
@@ -795,9 +795,18 @@ function renderRutinasAdmin(rutinas) {
   }).join('');
 }
 
+const bloqueCache = {};
+const editEjOrder = {};
+
 function renderBloqueAdmin(b) {
   const tipo = b.tipo || 'libre';
   const ejercicios = (b.ejercicios || []).sort((a, c) => a.orden - c.orden);
+  bloqueCache[b.id] = { ...b, ejercicios };
+  const displayHTML = ejercicios.map(e => `
+    <div class="admin-ejercicio-row">
+      <span>${esc(e.nombre)}${e.notas?` <span style="color:#555;font-size:0.72rem">(${esc(e.notas)})</span>`:''}</span>
+      <span>${e.series?e.series+'×':''}${esc(e.reps||'')}${e.video_url?` · <a href="${esc(e.video_url)}" target="_blank" style="color:var(--red);font-size:0.72rem">▶ ver</a>`:''}</span>
+    </div>`).join('');
   return `<div class="admin-bloque" id="bloque-card-${b.id}">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
       <span class="tipo-badge ${tipo}">${TIPO_LABELS[tipo]||tipo}</span>
@@ -805,16 +814,98 @@ function renderBloqueAdmin(b) {
       ${b.variante ? `<span style="font-size:0.72rem;color:#555;font-style:italic">${esc(b.variante)}</span>` : ''}
       ${b.duracion ? `<span style="font-size:0.72rem;color:var(--accent)">${esc(b.duracion)}</span>` : ''}
     </div>
-    <div>${ejercicios.map(e => `
-      <div class="admin-ejercicio-row">
-        <span>${esc(e.nombre)}${e.notas?` <span style="color:#555;font-size:0.72rem">(${esc(e.notas)})</span>`:''}</span>
-        <span>${e.series?e.series+'×':''}${esc(e.reps||'')}${e.video_url?` · <a href="${esc(e.video_url)}" target="_blank" style="color:var(--red);font-size:0.72rem">▶ ver</a>`:''}</span>
-      </div>`).join('')}
+    <div id="bloque-display-${b.id}">${displayHTML}
+      ${b.notas ? `<div style="font-size:0.75rem;color:#555;margin-top:4px;font-style:italic">${esc(b.notas)}</div>` : ''}
+      ${b.descanso ? `<div style="font-size:0.72rem;color:#555">Descanso: ${esc(b.descanso)}</div>` : ''}
     </div>
-    ${b.notas ? `<div style="font-size:0.75rem;color:#555;margin-top:4px;font-style:italic">${esc(b.notas)}</div>` : ''}
-    ${b.descanso ? `<div style="font-size:0.72rem;color:#555">Descanso: ${esc(b.descanso)}</div>` : ''}
-    <button class="btn-sm danger" style="margin-top:6px;font-size:0.68rem" onclick="eliminarBloque(${b.id})">Eliminar bloque</button>
+    <div id="bloque-edit-form-${b.id}" style="display:none;background:#111;border:1px solid #252525;padding:1rem;margin-top:0.8rem"></div>
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <button class="btn-sm" style="font-size:0.68rem" onclick="toggleEditBloque(${b.id})">Editar</button>
+      <button class="btn-sm danger" style="font-size:0.68rem" onclick="eliminarBloque(${b.id})">Eliminar bloque</button>
+    </div>
   </div>`;
+}
+
+function toggleEditBloque(bloqueId) {
+  const editForm = document.getElementById('bloque-edit-form-' + bloqueId);
+  const display = document.getElementById('bloque-display-' + bloqueId);
+  if (editForm.style.display !== 'none') {
+    editForm.style.display = 'none';
+    display.style.display = 'block';
+    return;
+  }
+  display.style.display = 'none';
+  editForm.style.display = 'block';
+  const b = bloqueCache[bloqueId];
+  if (!b) { editForm.innerHTML = '<p style="color:var(--red);font-size:0.82rem">Error al cargar datos del bloque.</p>'; return; }
+  editEjOrder[bloqueId] = [...b.ejercicios];
+  renderEditBloqueForm(bloqueId);
+}
+
+function renderEditBloqueForm(bloqueId) {
+  const b = bloqueCache[bloqueId];
+  const tipo = b.tipo || 'libre';
+  const isMusc = tipo === 'musculacion';
+  const ejs = editEjOrder[bloqueId];
+  const form = document.getElementById('bloque-edit-form-' + bloqueId);
+  const ejRowsHTML = ejs.map((e, i) => buildEditEjRow(bloqueId, e, i, ejs.length, isMusc)).join('');
+  form.innerHTML = `
+    <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:0.8rem;font-weight:700">✏ Editando: ${esc(b.nombre)}</div>
+    <div id="edit-ej-list-${bloqueId}">${ejRowsHTML}</div>
+    <div style="display:flex;gap:8px;margin-top:0.8rem">
+      <button class="btn-accent" style="font-size:0.8rem" onclick="guardarEdicionBloque(${bloqueId})">Guardar cambios</button>
+      <button class="btn-sm" onclick="toggleEditBloque(${bloqueId})">Cancelar</button>
+    </div>`;
+}
+
+function buildEditEjRow(bloqueId, e, idx, total, isMusc) {
+  const inputStyle = 'background:#0a0a0a;border:1px solid #2a2a2a;color:var(--white);font-family:'DM Sans',sans-serif;font-size:0.88rem;padding:0.45rem 0.65rem;outline:none;width:100%';
+  const upBtn = idx > 0 ? `<button class="var-btn" style="font-size:0.65rem;padding:0.2rem 0.4rem" onclick="moverEj(${bloqueId},${e.id},-1)">↑</button>` : '<span></span>';
+  const downBtn = idx < total-1 ? `<button class="var-btn" style="font-size:0.65rem;padding:0.2rem 0.4rem" onclick="moverEj(${bloqueId},${e.id},1)">↓</button>` : '<span></span>';
+  const pesoVal = e.notas?.startsWith('Peso:') ? e.notas.replace('Peso:','').trim() : '';
+  const cols = isMusc ? '2fr 0.5fr 0.5fr 0.6fr 1fr auto' : '2fr 0.7fr 1fr auto';
+  return `<div style="display:grid;grid-template-columns:${cols};gap:5px;align-items:center;margin-bottom:5px">
+    <input type="text" value="${esc(e.nombre)}" id="edit-nombre-${e.id}" style="${inputStyle}" placeholder="Ejercicio">
+    ${isMusc ? `
+    <input type="number" value="${e.series||''}" id="edit-series-${e.id}" style="${inputStyle}" placeholder="Series">
+    <input type="text" value="${esc(e.reps||'')}" id="edit-reps-${e.id}" style="${inputStyle}" placeholder="Reps">
+    <input type="text" value="${esc(pesoVal)}" id="edit-peso-${e.id}" style="${inputStyle}" placeholder="Peso">
+    ` : `<input type="text" value="${esc(e.reps||'')}" id="edit-reps-${e.id}" style="${inputStyle}" placeholder="Reps">`}
+    <input type="url" value="${esc(e.video_url||'')}" id="edit-video-${e.id}" style="${inputStyle}" placeholder="URL YouTube">
+    <div style="display:flex;flex-direction:column;gap:3px">${upBtn}${downBtn}</div>
+  </div>`;
+}
+
+function moverEj(bloqueId, ejId, dir) {
+  const ejs = editEjOrder[bloqueId];
+  const idx = ejs.findIndex(e => e.id === ejId);
+  if (idx < 0) return;
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= ejs.length) return;
+  [ejs[idx], ejs[newIdx]] = [ejs[newIdx], ejs[idx]];
+  renderEditBloqueForm(bloqueId);
+}
+
+async function guardarEdicionBloque(bloqueId) {
+  const b = bloqueCache[bloqueId];
+  const isMusc = (b.tipo || 'libre') === 'musculacion';
+  const ejs = editEjOrder[bloqueId];
+  const btn = document.querySelector(`#bloque-edit-form-${bloqueId} .btn-accent`);
+  if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+  let hasError = false;
+  for (let i = 0; i < ejs.length; i++) {
+    const e = ejs[i];
+    const nombre = document.getElementById('edit-nombre-' + e.id)?.value?.trim() || e.nombre;
+    const reps = document.getElementById('edit-reps-' + e.id)?.value?.trim() || null;
+    const series = isMusc ? (parseInt(document.getElementById('edit-series-' + e.id)?.value) || null) : null;
+    const pesoRaw = isMusc ? (document.getElementById('edit-peso-' + e.id)?.value?.trim() || '') : '';
+    const notas = isMusc && pesoRaw ? `Peso: ${pesoRaw}` : (!isMusc ? e.notas : null);
+    const video_url = document.getElementById('edit-video-' + e.id)?.value?.trim() || null;
+    const { error } = await sbClient.from('ejercicios').update({ nombre, reps, series, notas, video_url, orden: i }).eq('id', e.id);
+    if (error) { hasError = true; console.error('Error updating ejercicio:', error); }
+  }
+  if (btn) { btn.disabled = false; btn.textContent = hasError ? 'Error — reintentar' : 'Guardar cambios'; }
+  if (!hasError) await cargarRutinasAdmin(selectedAlumnoId);
 }
 
 // ── CRUD ADMIN ───────────────────────────────────────────────────
@@ -972,14 +1063,16 @@ async function crearRutina() {
   const titulo = document.getElementById('nr-titulo').value.trim();
   const dia = document.getElementById('nr-dia').value.trim();
   const notas = document.getElementById('nr-notas').value.trim();
+  const grupo = document.getElementById('nr-grupo')?.value?.trim() || null;
   if (!titulo || !dia) { alert('Completá título y día.'); return; }
 
-  const { error } = await sbClient.from('rutinas').insert({ alumno_id: selectedAlumnoId, titulo, dia, notas });
+  const { error } = await sbClient.from('rutinas').insert({ alumno_id: selectedAlumnoId, titulo, dia, notas, grupo });
   if (error) { alert('Error al guardar: ' + error.message); return; }
 
   document.getElementById('nr-titulo').value = '';
   document.getElementById('nr-dia').value = '';
   document.getElementById('nr-notas').value = '';
+  if (document.getElementById('nr-grupo')) document.getElementById('nr-grupo').value = '';
   toggleFormNuevaRutina();
   await cargarRutinasAdmin(selectedAlumnoId);
 }
@@ -1102,16 +1195,36 @@ function mostrarMsgAlumno(texto, tipo) {
 }
 
 // ── RESEÑAS ──────────────────────────────────────────────────────
+let resenasCache = [];
+let resenasPagina = 1;
+const RESENAS_POR_PAG = 10;
+
 async function cargarResenas() {
   const lista = document.getElementById('resenas-lista');
-  if (!lista) return;
+  if (!lista || !sbClient) return;
   lista.innerHTML = '<div class="resenas-loading">Cargando reseñas...</div>';
   const { data, error } = await sbClient.from('resenas').select('*').order('created_at', { ascending: false });
   if (error || !data?.length) {
     lista.innerHTML = '<div class="resenas-empty">Todavía no hay reseñas. ¡Sé el primero!</div>';
     return;
   }
-  lista.innerHTML = data.map(r => `
+  resenasCache = data;
+  resenasPagina = 1;
+  renderResenas();
+}
+
+function renderResenas() {
+  const lista = document.getElementById('resenas-lista');
+  if (!lista) return;
+  const total = resenasCache.length;
+  const totalPags = Math.ceil(total / RESENAS_POR_PAG);
+  const inicio = (resenasPagina - 1) * RESENAS_POR_PAG;
+  const fin = Math.min(inicio + RESENAS_POR_PAG, total);
+  const pagData = resenasCache.slice(inicio, fin);
+
+  const counterHTML = `<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem;font-weight:500">${total} reseña${total !== 1 ? 's' : ''}</div>`;
+
+  const resenasHTML = pagData.map(r => `
     <div class="resena-card">
       <div class="resena-header">
         <div>
@@ -1122,6 +1235,23 @@ async function cargarResenas() {
       </div>
       <div class="resena-texto">"${esc(r.comentario)}"</div>
     </div>`).join('');
+
+  let paginacionHTML = '';
+  if (totalPags > 1) {
+    const btns = Array.from({length: totalPags}, (_, i) => {
+      const active = i + 1 === resenasPagina;
+      return `<button class="btn-sm" style="${active ? 'border-color:var(--accent);color:var(--accent)' : ''}" onclick="irPaginaResenas(${i+1})">${i+1}</button>`;
+    }).join('');
+    paginacionHTML = `<div style="display:flex;gap:0.5rem;justify-content:center;margin-top:1.2rem;flex-wrap:wrap">${btns}</div>`;
+  }
+
+  lista.innerHTML = counterHTML + resenasHTML + paginacionHTML;
+}
+
+function irPaginaResenas(pag) {
+  resenasPagina = pag;
+  renderResenas();
+  document.getElementById('resenas-lista')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 async function enviarResena() {
