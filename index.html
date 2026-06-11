@@ -506,7 +506,7 @@
         <div class="admin-form" id="form-nueva-rutina" style="display:none">
           <div class="admin-form-title">Nueva rutina</div>
           <div class="admin-row">
-            <div class="admin-field"><label>Lítulo</label><input type="text" id="nr-titulo" placeholder="Ej: Fuerza Tren Superior" /></div>
+            <div class="admin-field"><label>Título</label><input type="text" id="nr-titulo" placeholder="Ej: Fuerza Tren Superior" /></div>
             <div class="admin-field"><label>Día / Período</label><input type="text" id="nr-dia" placeholder="Ej: Lunes, Clase 1" /></div>
           </div>
           <div class="admin-field"><label>Grupo (opcional)</label><input type="text" id="nr-grupo" placeholder="Ej: MES 1, MES 2" /></div>
@@ -859,7 +859,7 @@ function renderEditBloqueForm(bloqueId) {
 }
 
 function buildEditEjRow(bloqueId, e, idx, total, isMusc) {
-  const inputStyle = 'background:#0a0a0a;border:1px solid #2a2a2a;color:var(--white);font-family:'DM Sans',sans-serif;font-size:0.88rem;padding:0.45rem 0.65rem;outline:none;width:100%';
+  const inputStyle = "background:#0a0a0a;border:1px solid #2a2a2a;color:var(--white);font-family:'DM Sans',sans-serif;font-size:0.88rem;padding:0.45rem 0.65rem;outline:none;width:100%";
   const upBtn = idx > 0 ? `<button class="var-btn" style="font-size:0.65rem;padding:0.2rem 0.4rem" onclick="moverEj(${bloqueId},${e.id},-1)">↑</button>` : '<span></span>';
   const downBtn = idx < total-1 ? `<button class="var-btn" style="font-size:0.65rem;padding:0.2rem 0.4rem" onclick="moverEj(${bloqueId},${e.id},1)">↓</button>` : '<span></span>';
   const pesoVal = e.notas?.startsWith('Peso:') ? e.notas.replace('Peso:','').trim() : '';
@@ -957,7 +957,7 @@ function buildSubForm(tipo, rutinaId) {
   } else if (tipo === 'emom') {
     extraFields = `<div class="admin-row" style="margin-bottom:8px">
       <div class="admin-field"><label>Duración total</label><input type="text" id="nb-dur-${rutinaId}" placeholder="Ej: 16 min"></div>
-      <div class="admin-field"><label>Min por ronda</label><input type="text" id="nb-ronda-${rutinaId}" placeholder="Ej: 2"></div>
+      <div class="admin-field"><label>Min por londa</label><input type="text" id="nb-ronda-${rutinaId}" placeholder="Ej: 2"></div>
     </div>`;
   } else if (tipo === 'musculacion') {
     extraFields = `<div class="admin-field" style="margin-bottom:8px"><label>Descanso entre series</label><input type="text" id="nb-desc-${rutinaId}" placeholder="Ej: 90 seg" style="width:200px"></div>`;
