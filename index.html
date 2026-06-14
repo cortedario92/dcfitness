@@ -648,7 +648,7 @@ async function doLogin() {
     btn.disabled = false; btn.textContent = 'Ingresar →';
     btn.style.background = ''; btn.style.color = ''; btn.style.border = '';
   } catch(e) {
-    btn.disabled = false; btn.textContent = 'Ingresar →+;
+    btn.disabled = false; btn.textContent = 'Ingresar →';
     err.textContent = 'Error: ' + e.message;
     err.style.display = 'block';
     console.error('Login error:', e);
