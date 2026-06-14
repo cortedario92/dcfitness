@@ -273,6 +273,12 @@
   .tipo-badge.chipper { border-color: var(--red); color: var(--red); }
   .tipo-badge.tabata { border-color: #c084fc; color: #c084fc; }
   .tipo-badge.libre { border-color: #555; color: #555; }
+  .tipo-badge.muscu_open { border-color: #c8ff00; color: #c8ff00; }
+  .muscu-open-dropdown { position:absolute; top:100%; left:0; right:0; background:#1a1a1a; border:1px solid #2a2a2a; z-index:200; max-height:180px; overflow-y:auto; display:none; border-radius:0 0 4px 4px; }
+  .muscu-open-opt { padding:6px 10px; cursor:pointer; font-size:0.78rem; color:#bbb; display:flex; justify-content:space-between; align-items:center; }
+  .muscu-open-opt:hover { background:#252525; color:#fff; }
+  .muscu-open-opt .maq-tag { color:#c8ff00; font-size:0.68rem; font-weight:700; }
+  .maq-num-badge { display:inline-block; background:#1a1a1a; border:1px solid #2a2a2a; color:#c8ff00; font-size:0.72rem; font-weight:700; padding:1px 7px; border-radius:3px; }
   .ej-form-row { display: grid; gap: 5px; align-items: center; margin-bottom: 5px; }
   .yt-btn-small { background: rgba(255,77,77,0.1); border: 1px solid rgba(255,77,77,0.3); color: #ff6b6b; font-size: 0.68rem; padding: 0.25rem 0.5rem; cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap; }
 
@@ -526,7 +532,7 @@
 
 <script>
 const SUPABASE_URL  = 'https://vrbtrvoidkcoogcefcrt.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZyYnRydm9pZGtjb29nY2VmY3J0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzgxMjUsImV4cCI6MjA5NTY1NDEyNX0.nDf6xD3RjFIKL-3KuqurFBe1pbVyVpOUVVSMTdJcxu0';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZyYnRydm9pZGtjb29nY2VmY3J0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzgxMjUsImV4cCI6MjA5NTY0NDEyNX0.nDf6xD3RjFIKL-3KuqurFBe1pbVyVpOUVVSMTdJcxu0';
 const ADMIN_EMAIL = 'dariocorte.prof@gmail.com';
 const YOUTUBE_API_KEY = 'AIzaSyAyJ_H1fQscWcSWQySgCWMAvHYrk4GymPQ';
 
@@ -536,7 +542,48 @@ let selectedAlumnoId = null;
 let selectedAlumnoNombre = '';
 const bloqueFormState = {};
 
-const TIPO_LABELS = { calor:'Entrada en calor', musculacion:'Musculación', amrap:'AMRAP', emom:'EMOM', tabata:'Tabata', chipper:'Chipper', libre:'Bloque libre' };
+const TIPO_LABELS = { calor:'Entrada en calor', musculacion:'Musculación', muscu_open:'Musculación Open', amrap:'AMRAP', emom:'EMOM', tabata:'Tabata', chipper:'Chipper', libre:'Bloque libre' };
+const MUSCU_OPEN_MAP = {
+  'Maq. Gemelos': 2, 'Maq. Pat Gluetos': 3, 'Maq. Abdominal': 4,
+  'Sillon Cuadriceps': 5, 'Sillon Izquios': 6, 'Sillon Aductores': 7, 'Sillones Abductores': 8,
+  'Polea Simple': 9, 'Polea Doble': 10, 'Maq Press Hombros': 11, 'Maq. Mariposa': 12,
+  'Maq. Pecho Guiada': 13, 'Maq. Remo Guiada': 14, 'Maq. Curl de Biceps': 15,
+  'Dorsalera Barra Toma Prono': 16, 'Dorsalera Barra Toma Supina': 16, 'Dorsalera Agarre Supino': 16,
+  'Banco Plano': 17, 'Banco Inclinado': 18, 'Banco Scott': 19, 'Prensa Basculante': 20,
+  'Maq. Traccion dorsal': 22, 'Dominada Asistida': 24, 'Fondos Guiados': 24,
+  'Maq. Triceps Guiado': 28, 'Pecho HAMMER': 30, 'Hombros HAMMER': 31, 'Remo HAMMER': 32,
+  'Maq. Elevacion de cadera ROJA': 33, 'Maq. Sentadilla Roja': 34, 'Remo Negro 2do': 35,
+  'Maq. Elevacion de cadera NEGRA': 36, 'Maq. Sumo c/ Cinturon': 37, 'Smith': 51, 'Remo Bajo': 55
+};
+let _acMatches = [];
+function showMuscuOpenAC(nameId, maqId) {
+  const input = document.getElementById(nameId);
+  const dd = document.getElementById('ac-dd-' + nameId);
+  if (!input || !dd) return;
+  const val = input.value.toLowerCase().trim();
+  if (!val) { dd.style.display = 'none'; return; }
+  _acMatches = Object.keys(MUSCU_OPEN_MAP).filter(k => k.toLowerCase().includes(val));
+  if (!_acMatches.length) { dd.style.display = 'none'; return; }
+  dd.innerHTML = _acMatches.map((m, i) =>
+    `<div class="muscu-open-opt" onmousedown="pickMuscuOpenEj('${nameId}','${maqId}',${i})"><span>${esc(m)}</span><span class="maq-tag">N° ${MUSCU_OPEN_MAP[m]}</span></div>`
+  ).join('');
+  dd.style.display = 'block';
+}
+function pickMuscuOpenEj(nameId, maqId, idx) {
+  const nombre = _acMatches[idx];
+  const input = document.getElementById(nameId);
+  const maqEl = document.getElementById(maqId);
+  const dd = document.getElementById('ac-dd-' + nameId);
+  if (input) input.value = nombre;
+  if (maqEl) maqEl.value = MUSCU_OPEN_MAP[nombre] ?? '';
+  if (dd) dd.style.display = 'none';
+  const videoId = nameId.replace('ej-nombre-', 'ej-video-');
+  const videoEl = document.getElementById(videoId);
+  if (videoEl && !videoEl.value) {
+    buscarVideoYoutube(nombre).then(url => { if (url) videoEl.value = url; });
+  }
+}
+
 const VARIANTES_MUSC = ['Hipertrofia','Fuerza','Fuerza máxima','Potencia','Resistencia muscular','Tonificación','Funcional'];
 const GRUPOS_MUSC = ['Piernas','Pecho','Espalda','Bíceps','Tríceps','Hombros','Core / abdomen','Cuerpo completo'];
 
@@ -588,12 +635,20 @@ async function doLogin() {
   btn.disabled = true; btn.textContent = 'Ingresando...';
   try {
     const { data, error } = await sbClient.auth.signInWithPassword({ email, password: pass });
-    btn.disabled = false; btn.textContent = 'Ingresar →';
-    if (error) { err.textContent = 'Email o contraseña incorrectos.'; err.style.display = 'block'; return; }
+    if (error) {
+      btn.disabled = false; btn.textContent = 'Ingresar →+;
+      err.textContent = 'Email o contraseña incorrectos.'; err.style.display = 'block'; return;
+    }
     err.style.display = 'none';
+    btn.textContent = '✓ Cargando tu rutina...';
+    btn.style.background = '#181818';
+    btn.style.color = 'var(--accent)';
+    btn.style.border = '1px solid var(--accent)';
     await handleAuthUser(data.user);
-  } catch(e) {
     btn.disabled = false; btn.textContent = 'Ingresar →';
+    btn.style.background = ''; btn.style.color = ''; btn.style.border = '';
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Ingresar →+;
     err.textContent = 'Error: ' + e.message;
     err.style.display = 'block';
     console.error('Login error:', e);
@@ -706,6 +761,13 @@ function renderBloqueAlumno(b) {
     tbody = ejercicios.map((e, i) => {
       const peso = e.notas?.startsWith('Peso:') ? e.notas.replace('Peso:','').trim() : (e.notas || '');
       return `<tr><td>${numCircle(i)}</td><td><span class="ex-name">${esc(e.nombre)}</span></td><td><span class="ex-amount">${e.series ? e.series+' × ':'' }${esc(e.reps||'')}</span></td><td style="color:#999;font-size:0.85rem">${esc(peso)}</td><td>${ytBtn(e.video_url)}</td></tr>`;
+    }).join('');
+  } else if (tipo === 'muscu_open') {
+    thead = '<tr><th>#</th><th>Ejercicio</th><th>Series × Reps</th><th>Peso</th><th>N° Maq.</th><th>Tutorial</th></tr>';
+    tbody = ejercicios.map((e, i) => {
+      const peso = e.notas?.match(/Peso:\s*([^|]+)/)?.[1]?.trim() || '';
+      const maq = e.notas?.match(/Maq:\s*(\w+)/)?.[1]?.trim() || '';
+      return `<tr><td>${numCircle(i)}</td><td><span class="ex-name">${esc(e.nombre)}</span></td><td><span class="ex-amount">${e.series ? e.series+' × ':'' }${esc(e.reps||'')}</span></td><td style="color:#999;font-size:0.85rem">${esc(peso)}</td><td>${maq ? `<span class="maq-num-badge">${esc(maq)}</span>` : '—'}</td><td>${ytBtn(e.video_url)}</td></tr>`;
     }).join('');
   } else if (tipo === 'emom') {
     thead = '<tr><th>Minuto</th><th>Ejercicio</th><th>Reps</th><th>Tutorial</th></tr>';
@@ -845,10 +907,10 @@ function toggleEditBloque(bloqueId) {
 function renderEditBloqueForm(bloqueId) {
   const b = bloqueCache[bloqueId];
   const tipo = b.tipo || 'libre';
-  const isMusc = tipo === 'musculacion';
+  const isMusc = tipo === 'musculacion' || tipo === 'muscu_open';
   const ejs = editEjOrder[bloqueId];
   const form = document.getElementById('bloque-edit-form-' + bloqueId);
-  const ejRowsHTML = ejs.map((e, i) => buildEditEjRow(bloqueId, e, i, ejs.length, isMusc)).join('');
+  const ejRowsHTML = ejs.map((e, i) => buildEditEjRow(bloqueId, e, i, ejs.length, tipo)).join('');
   form.innerHTML = `
     <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:0.8rem;font-weight:700">✏ Editando: ${esc(b.nombre)}</div>
     <div id="edit-ej-list-${bloqueId}">${ejRowsHTML}</div>
@@ -858,18 +920,22 @@ function renderEditBloqueForm(bloqueId) {
     </div>`;
 }
 
-function buildEditEjRow(bloqueId, e, idx, total, isMusc) {
+function buildEditEjRow(bloqueId, e, idx, total, tipo) {
+  const isMusc = tipo === 'musculacion' || tipo === 'muscu_open';
+  const isMuscOpen = tipo === 'muscu_open';
   const inputStyle = "background:#0a0a0a;border:1px solid #2a2a2a;color:var(--white);font-family:'DM Sans',sans-serif;font-size:0.88rem;padding:0.45rem 0.65rem;outline:none;width:100%";
   const upBtn = idx > 0 ? `<button class="var-btn" style="font-size:0.65rem;padding:0.2rem 0.4rem" onclick="moverEj(${bloqueId},${e.id},-1)">↑</button>` : '<span></span>';
   const downBtn = idx < total-1 ? `<button class="var-btn" style="font-size:0.65rem;padding:0.2rem 0.4rem" onclick="moverEj(${bloqueId},${e.id},1)">↓</button>` : '<span></span>';
-  const pesoVal = e.notas?.startsWith('Peso:') ? e.notas.replace('Peso:','').trim() : '';
-  const cols = isMusc ? '2fr 0.5fr 0.5fr 0.6fr 1fr auto' : '2fr 0.7fr 1fr auto';
+  const pesoVal = e.notas?.match(/Peso:\s*([^|]+)/)?.[1]?.trim() || (e.notas?.startsWith('Peso:') ? e.notas.replace('Peso:','').trim() : '');
+  const maqVal = e.notas?.match(/Maq:\s*(\w+)/)?.[1]?.trim() || '';
+  const cols = isMuscOpen ? '2fr 0.5fr 0.5fr 0.6fr 0.5fr 1fr auto' : (isMusc ? '2fr 0.5fr 0.5fr 0.6fr 1fr auto' : '2fr 0.7fr 1fr auto');
   return `<div style="display:grid;grid-template-columns:${cols};gap:5px;align-items:center;margin-bottom:5px">
     <input type="text" value="${esc(e.nombre)}" id="edit-nombre-${e.id}" style="${inputStyle}" placeholder="Ejercicio">
     ${isMusc ? `
     <input type="number" value="${e.series||''}" id="edit-series-${e.id}" style="${inputStyle}" placeholder="Series">
     <input type="text" value="${esc(e.reps||'')}" id="edit-reps-${e.id}" style="${inputStyle}" placeholder="Reps">
     <input type="text" value="${esc(pesoVal)}" id="edit-peso-${e.id}" style="${inputStyle}" placeholder="Peso">
+    ${isMuscOpen ? `<input type="text" value="${esc(maqVal)}" id="edit-maq-${e.id}" style="${inputStyle}" placeholder="N° Maq">` : ''}
     ` : `<input type="text" value="${esc(e.reps||'')}" id="edit-reps-${e.id}" style="${inputStyle}" placeholder="Reps">`}
     <input type="url" value="${esc(e.video_url||'')}" id="edit-video-${e.id}" style="${inputStyle}" placeholder="URL YouTube">
     <div style="display:flex;flex-direction:column;gap:3px">${upBtn}${downBtn}</div>
@@ -888,7 +954,8 @@ function moverEj(bloqueId, ejId, dir) {
 
 async function guardarEdicionBloque(bloqueId) {
   const b = bloqueCache[bloqueId];
-  const isMusc = (b.tipo || 'libre') === 'musculacion';
+  const isMusc = ['musculacion','muscu_open'].includes(b.tipo || 'libre');
+  const isMuscOpen = (b.tipo || 'libre') === 'muscu_open';
   const ejs = editEjOrder[bloqueId];
   const btn = document.querySelector(`#bloque-edit-form-${bloqueId} .btn-accent`);
   if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
@@ -899,7 +966,13 @@ async function guardarEdicionBloque(bloqueId) {
     const reps = document.getElementById('edit-reps-' + e.id)?.value?.trim() || null;
     const series = isMusc ? (parseInt(document.getElementById('edit-series-' + e.id)?.value) || null) : null;
     const pesoRaw = isMusc ? (document.getElementById('edit-peso-' + e.id)?.value?.trim() || '') : '';
-    const notas = isMusc && pesoRaw ? `Peso: ${pesoRaw}` : (!isMusc ? e.notas : null);
+    const maqRaw = isMuscOpen ? (document.getElementById('edit-maq-' + e.id)?.value?.trim() || '') : '';
+    let notas;
+    if (isMuscOpen) {
+      notas = pesoRaw && maqRaw ? `Peso: ${pesoRaw} | Maq: ${maqRaw}` : (maqRaw ? `Maq: ${maqRaw}` : (pesoRaw ? `Peso: ${pesoRaw}` : null));
+    } else {
+      notas = isMusc && pesoRaw ? `Peso: ${pesoRaw}` : (!isMusc ? e.notas : null);
+    }
     const video_url = document.getElementById('edit-video-' + e.id)?.value?.trim() || null;
     const { error } = await sbClient.from('ejercicios').update({ nombre, reps, series, notas, video_url, orden: i }).eq('id', e.id);
     if (error) { hasError = true; console.error('Error updating ejercicio:', error); }
@@ -959,7 +1032,7 @@ function buildSubForm(tipo, rutinaId) {
       <div class="admin-field"><label>Duración total</label><input type="text" id="nb-dur-${rutinaId}" placeholder="Ej: 16 min"></div>
       <div class="admin-field"><label>Min por londa</label><input type="text" id="nb-ronda-${rutinaId}" placeholder="Ej: 2"></div>
     </div>`;
-  } else if (tipo === 'musculacion') {
+  } else if (tipo === 'musculacion' || tipo === 'muscu_open') {
     extraFields = `<div class="admin-field" style="margin-bottom:8px"><label>Descanso entre series</label><input type="text" id="nb-desc-${rutinaId}" placeholder="Ej: 90 seg" style="width:200px"></div>`;
   } else if (tipo === 'tabata') {
     extraFields = `<div class="admin-row" style="margin-bottom:8px">
@@ -968,7 +1041,7 @@ function buildSubForm(tipo, rutinaId) {
       <div class="admin-field"><label>Descanso</label><input type="text" id="nb-desc-${rutinaId}" placeholder="10 seg" style="width:100%"></div>
     </div>`;
   }
-  const notasField = ['emom','chipper','tabata','libre'].includes(tipo)
+  const notasField = ['emom','chipper',"tabata','libre'].includes(tipo)
     ? `<div class="admin-field" style="margin-top:8px"><label>Notas</label><textarea id="nb-notas-${rutinaId}" placeholder="Indicaciones generales..." style="resize:vertical;min-height:55px"></textarea></div>`
     : '';
   return `${extraTop}${extraFields}
@@ -986,6 +1059,7 @@ function buildSubForm(tipo, rutinaId) {
 
 function ejGridCols(tipo) {
   if (tipo === 'musculacion') return 'grid-template-columns:2fr 0.6fr 0.6fr 0.7fr 1fr auto';
+  if (tipo === 'muscu_open') return 'grid-template-columns:2fr 0.5fr 0.5fr 0.6fr 0.5fr 1fr auto';
   if (tipo === 'emom') return 'grid-template-columns:0.5fr 2fr 0.6fr 0.7fr 1fr auto';
   if (tipo === 'tabata') return 'grid-template-columns:2fr 1fr auto';
   return 'grid-template-columns:2fr 0.9fr 1fr auto';
@@ -993,6 +1067,7 @@ function ejGridCols(tipo) {
 
 function ejColLabels(tipo) {
   if (tipo === 'musculacion') return '<span>Ejercicio</span><span>Series</span><span>Reps</span><span>Peso</span><span>YouTube</span><span></span>';
+  if (tipo === 'muscu_open') return '<span>Ejercicio</span><span>Series</span><span>Reps</span><span>Peso</span><span>N° Maq.</span><span>YouTube</span><span></span>';
   if (tipo === 'emom') return '<span>Min</span><span>Ejercicio</span><span>Reps</span><span>Carga</span><span>YouTube</span><span></span>';
   if (tipo === 'tabata') return '<span>Ejercicio</span><span>YouTube</span><span></span>';
   return `<span>Ejercicio</span><span>${tipo==='chipper'?'Cantidad':'Reps/Tiempo'}</span><span>YouTube</span><span></span>`;
@@ -1006,6 +1081,17 @@ function buildEjRow(tipo, rutinaId, idx) {
     <input type="number" placeholder="4" id="ej-series-${id}" min="1">
     <input type="text" placeholder="10" id="ej-reps-${id}">
     <input type="text" placeholder="60kg" id="ej-peso-${id}">
+    <input type="url" placeholder="https://..." id="ej-video-${id}">
+    ${yt}</div>`;
+  if (tipo === 'muscu_open') return `<div class="ej-form-row" style="grid-template-columns:2fr 0.5fr 0.5fr 0.6fr 0.5fr 1fr auto">
+    <div style="position:relative">
+      <input type="text" placeholder="Ejercicio" id="ej-nombre-${id}" oninput="showMuscuOpenAC('ej-nombre-${id}','ej-maq-${id}')" onblur="setTimeout(()=>{const d=document.getElementById('ac-dd-ej-nombre-${id}');if(d)d.style.display='none'},200)" autocomplete="off" style="width:100%">
+      <div id="ac-dd-ej-nombre-${id}" class="muscu-open-dropdown"></div>
+    </div>
+    <input type="number" placeholder="4" id="ej-series-${id}" min="1">
+    <input type="text" placeholder="10" id="ej-reps-${id}">
+    <input type="text" placeholder="60kg" id="ej-peso-${id}">
+    <input type="text" placeholder="N°" id="ej-maq-${id}" style="text-align:center">
     <input type="url" placeholder="https://..." id="ej-video-${id}">
     ${yt}</div>`;
   if (tipo === 'tabata') return `<div class="ej-form-row" style="grid-template-columns:2fr 1fr auto">
@@ -1059,7 +1145,7 @@ async function buscarVideoYoutube(query) {
   }
 }
 
-async function crearRutina() {
+apync function crearRutina() {
   const titulo = document.getElementById('nr-titulo').value.trim();
   const dia = document.getElementById('nr-dia').value.trim();
   const notas = document.getElementById('nr-notas').value.trim();
@@ -1099,6 +1185,8 @@ async function crearBloque(rutinaId) {
 
   let nombre = TIPO_LABELS[tipo];
   if (tipo === 'musculacion' && grupo_muscular) nombre = `Musculación — ${grupo_muscular}`;
+  else if (tipo === 'muscu_open' && grupo_muscular) nombre = `Musculación Open — ${grupo_muscular}`;
+  else if (tipo === 'muscu_open') nombre = 'Musculación Open';
   else if (tipo === 'amrap' && duracion) nombre = `AMRAP ${duracion}`;
   else if (tipo === 'emom' && duracion) nombre = `EMOM ${duracion}`;
   else if (tipo === 'tabata') {
@@ -1126,7 +1214,13 @@ async function crearBloque(rutinaId) {
     let video_url = document.getElementById('ej-video-' + id)?.value?.trim() || null;
     const min = document.getElementById('ej-min-' + id)?.value?.trim();
     const peso = document.getElementById('ej-peso-' + id)?.value?.trim();
-    const notas_ej = min ? min : (peso ? `Peso: ${peso}` : null);
+    const maq = document.getElementById('ej-maq-' + id)?.value?.trim() || '';
+    let notas_ej;
+    if (state.tipo === 'muscu_open') {
+      notas_ej = peso && maq ? `Peso: ${peso} | Maq: ${maq}` : (maq ? `Maq: ${maq}` : (peso ? `Peso: ${peso}` : null));
+    } else {
+      notas_ej = min ? min : (peso ? `Peso: ${peso}` : null);
+    }
     ejerciciosToInsert.push({ nombre: nombre_ej, series, reps, video_url, notas: notas_ej, orden: ejOrden++ });
   }
 
@@ -1289,5 +1383,6 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && document.getElementById('login-page').classList.contains('active')) doLogin();
 });
 </script>
+
 </body>
 </html>
