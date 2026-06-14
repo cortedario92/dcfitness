@@ -532,7 +532,7 @@
 
 <script>
 const SUPABASE_URL  = 'https://vrbtrvoidkcoogcefcrt.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZyYnRydm9pZGtjb29nY2VmY3J0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzgxMjUsImV4cCI6MjA5NTY0NDEyNX0.nDf6xD3RjFIKL-3KuqurFBe1pbVyVpOUVVSMTdJcxu0';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZyYnRydm9pZGtjb29nY2VmY3J0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzgxMjUsImV4cCI6MjA5NTY1NDEyNX0.nDf6xD3RjFIKL-3KuqurFBe1pbVyVpOUVVSMTdJcxu0';
 const ADMIN_EMAIL = 'dariocorte.prof@gmail.com';
 const YOUTUBE_API_KEY = 'AIzaSyAyJ_H1fQscWcSWQySgCWMAvHYrk4GymPQ';
 
@@ -1041,7 +1041,7 @@ function buildSubForm(tipo, rutinaId) {
       <div class="admin-field"><label>Descanso</label><input type="text" id="nb-desc-${rutinaId}" placeholder="10 seg" style="width:100%"></div>
     </div>`;
   }
-  const notasField = ['emom','chipper',"tabata','libre'].includes(tipo)
+  const notasField = ['emom','chipper','tabata','libre'].includes(tipo)
     ? `<div class="admin-field" style="margin-top:8px"><label>Notas</label><textarea id="nb-notas-${rutinaId}" placeholder="Indicaciones generales..." style="resize:vertical;min-height:55px"></textarea></div>`
     : '';
   return `${extraTop}${extraFields}
@@ -1145,7 +1145,7 @@ async function buscarVideoYoutube(query) {
   }
 }
 
-apync function crearRutina() {
+async function crearRutina() {
   const titulo = document.getElementById('nr-titulo').value.trim();
   const dia = document.getElementById('nr-dia').value.trim();
   const notas = document.getElementById('nr-notas').value.trim();
