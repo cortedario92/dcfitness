@@ -1229,4 +1229,203 @@ async function crearBloque(rutinaId) {
   const duracionFinal = tipo === 'rondas' ? (rondas ? `${rondas} rondas` : duracion) : duracion;
 
   let nombre = TIPO_LABELS[tipo];
-  if (!t
+  if ((tipo === 'musculacion' || tipo === 'muscu_open') && variante) nombre = variante;
+  else if (tipo === 'amrap' && duracion) nombre = `AMRAP ${duracion}`;
+  else if (tipo === 'emom' && duracion) nombre = `EMOM ${duracion}`;
+  else if (tipo === 'tabata') {
+    const r = rondas || '8'; const t = trabajo || '20 seg'; const d = descanso || '10 seg';
+    nombre = `Tabata — ${r} rondas · ${t} trabajo / ${d} descanso`;
+  }
+
+  const { data: bls } = await sbClient.from('bloques').select('orden').eq('rutina_id', rutinaId).order('orden', { ascending: false }).limit(1);
+  const orden = bls?.length ? (bls[0].orden + 1) : 0;
+
+  const { data: bloqueData, error: bErr } = await sbClient.from('bloques')
+    .insert({ rutina_id: rutinaId, nombre, tipo, grupo_muscular, variante, duracion: duracionFinal, descanso, notas, orden })
+    .select().single();
+  if (bErr) { alert('Error al crear bloque: ' + bErr.message); return; }
+
+  // Recopilar ejercicios y buscar videos automáticamente para los que estén vacíos
+  const ejerciciosToInsert = [];
+  let ejOrden = 0;
+  for (const idx of state.ejRows) {
+    const id = `${rutinaId}-${idx}`;
+    const nombre_ej = document.getElementById('ej-nombre-' + id)?.value?.trim();
+    if (!nombre_ej) continue;
+    const reps = document.getElementById('ej-reps-' + id)?.value?.trim() || null;
+    const series = parseInt(document.getElementById('ej-series-' + id)?.value) || null;
+    let video_url = document.getElementById('ej-video-' + id)?.value?.trim() || null;
+    const min = document.getElementById('ej-min-' + id)?.value?.trim();
+    const peso = document.getElementById('ej-peso-' + id)?.value?.trim();
+    const maq = document.getElementById('ej-maq-' + id)?.value?.trim() || '';
+    let notas_ej;
+    if (state.tipo === 'muscu_open') {
+      notas_ej = peso && maq ? `Peso: ${peso} | Maq: ${maq}` : (maq ? `Maq: ${maq}` : (peso ? `Peso: ${peso}` : null));
+    } else {
+      notas_ej = min ? min : (peso ? `Peso: ${peso}` : null);
+    }
+    ejerciciosToInsert.push({ nombre: nombre_ej, series, reps, video_url, notas: notas_ej, orden: ejOrden++ });
+  }
+
+  // Buscar videos automáticamente para ejercicios sin URL
+  const sinVideo = ejerciciosToInsert.filter(e => !e.video_url);
+  if (sinVideo.length) {
+    const btn = document.querySelector(`#form-bloque-${rutinaId} .btn-accent`);
+    if (btn) { btn.disabled = true; btn.textContent = `Buscando videos (0/${sinVideo.length})...`; }
+    for (let i = 0; i < sinVideo.length; i++) {
+      if (btn) btn.textContent = `Buscando videos (${i+1}/${sinVideo.length})...`;
+      const url = await buscarVideoYoutube(sinVideo[i].nombre);
+      if (url) sinVideo[i].video_url = url;
+    }
+    if (btn) { btn.disabled = false; btn.textContent = 'Guardar bloque'; }
+  }
+
+  const toInsert = ejerciciosToInsert.map(e => ({ ...e, bloque_id: bloqueData.id }));
+  if (toInsert.length) await sbClient.from('ejercicios').insert(toInsert);
+
+  toggleFormBloque(rutinaId);
+  await cargarRutinasAdmin(selectedAlumnoId);
+}
+
+async function eliminarBloque(bloqueId) {
+  if (!confirm('¿Eliminar este bloque y sus ejercicios?')) return;
+  await sbClient.from('bloques').delete().eq('id', bloqueId);
+  await cargarRutinasAdmin(selectedAlumnoId);
+}
+
+// ── CREAR ALUMNO ─────────────────────────────────────────────────
+async function crearAlumno() {
+  const nombre = document.getElementById('na-nombre').value.trim();
+  const email = document.getElementById('na-email').value.trim();
+  const pass = document.getElementById('na-pass').value;
+  const msg = document.getElementById('na-msg');
+
+  if (!nombre || !email || !pass) { mostrarMsgAlumno('Completá todos los campos.', 'error'); return; }
+  if (pass.length < 6) { mostrarMsgAlumno('La contraseña debe tener al menos 6 caracteres.', 'error'); return; }
+
+  mostrarMsgAlumno('Creando...', 'info');
+
+  // Usamos un cliente sin sesión para no cerrar la sesión del admin
+  const sbTemp = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
+  const { data, error } = await sbTemp.auth.signUp({ email, password: pass });
+
+  if (error) { mostrarMsgAlumno('Error: ' + error.message, 'error'); return; }
+
+  // Guardar nombre en perfiles (el trigger ya crea el perfil, nosotros actualizamos el nombre)
+  const userId = data.user?.id;
+  if (userId) {
+    await sbClient.from('perfiles').upsert({ user_id: userId, email, nombre, es_admin: false }, { onConflict: 'user_id' });
+  }
+
+  mostrarMsgAlumno('✓ Alumno creado correctamente.', 'ok');
+  document.getElementById('na-nombre').value = '';
+  document.getElementById('na-email').value = '';
+  document.getElementById('na-pass').value = '';
+  await cargarAlumnos();
+}
+
+function mostrarMsgAlumno(texto, tipo) {
+  const msg = document.getElementById('na-msg');
+  msg.style.display = 'block';
+  msg.style.color = tipo === 'error' ? 'var(--red)' : tipo === 'ok' ? 'var(--green)' : '#888';
+  msg.textContent = texto;
+}
+
+// ── RESEÑAS ──────────────────────────────────────────────────────
+let resenasCache = [];
+let resenasPagina = 1;
+const RESENAS_POR_PAG = 10;
+
+async function cargarResenas() {
+  const lista = document.getElementById('resenas-lista');
+  if (!lista || !sbClient) return;
+  lista.innerHTML = '<div class="resenas-loading">Cargando reseñas...</div>';
+  const { data, error } = await sbClient.from('resenas').select('*').order('created_at', { ascending: false });
+  if (error || !data?.length) {
+    lista.innerHTML = '<div class="resenas-empty">Todavía no hay reseñas. ¡Sé el primero!</div>';
+    return;
+  }
+  resenasCache = data;
+  resenasPagina = 1;
+  renderResenas();
+}
+
+function renderResenas() {
+  const lista = document.getElementById('resenas-lista');
+  if (!lista) return;
+  const total = resenasCache.length;
+  const totalPags = Math.ceil(total / RESENAS_POR_PAG);
+  const inicio = (resenasPagina - 1) * RESENAS_POR_PAG;
+  const fin = Math.min(inicio + RESENAS_POR_PAG, total);
+  const pagData = resenasCache.slice(inicio, fin);
+
+  const counterHTML = `<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem;font-weight:500">${total} reseña${total !== 1 ? 's' : ''}</div>`;
+
+  const resenasHTML = pagData.map(r => `
+    <div class="resena-card">
+      <div class="resena-header">
+        <div>
+          <div class="resena-autor">${esc(r.nombre)}</div>
+          <div class="resena-fecha">${new Date(r.created_at).toLocaleDateString('es-AR', {day:'numeric', month:'long', year:'numeric'})}</div>
+        </div>
+        <div class="resena-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</div>
+      </div>
+      <div class="resena-texto">"${esc(r.comentario)}"</div>
+    </div>`).join('');
+
+  let paginacionHTML = '';
+  if (totalPags > 1) {
+    const btns = Array.from({length: totalPags}, (_, i) => {
+      const active = i + 1 === resenasPagina;
+      return `<button class="btn-sm" style="${active ? 'border-color:var(--accent);color:var(--accent)' : ''}" onclick="irPaginaResenas(${i+1})">${i+1}</button>`;
+    }).join('');
+    paginacionHTML = `<div style="display:flex;gap:0.5rem;justify-content:center;margin-top:1.2rem;flex-wrap:wrap">${btns}</div>`;
+  }
+
+  lista.innerHTML = counterHTML + resenasHTML + paginacionHTML;
+}
+
+function irPaginaResenas(pag) {
+  resenasPagina = pag;
+  renderResenas();
+  document.getElementById('resenas-lista')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function enviarResena() {
+  const nombre = document.getElementById('r-nombre').value.trim();
+  const texto = document.getElementById('r-texto').value.trim();
+  const ratingInput = document.querySelector('input[name="rating"]:checked');
+  const msg = document.getElementById('form-msg');
+  msg.className = 'form-msg';
+  if (!nombre || !texto || !ratingInput) { msg.textContent = 'Completá todos los campos y elegí una puntuación.'; msg.className = 'form-msg error'; return; }
+  const btn = document.getElementById('btn-enviar');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  const { error } = await sbClient.from('resenas').insert([{ nombre, comentario: texto, rating: parseInt(ratingInput.value) }]);
+  if (error) { msg.textContent = 'Hubo un error. Intentá de nuevo.'; msg.className = 'form-msg error'; }
+  else { msg.textContent = '¡Gracias por tu reseña!'; msg.className = 'form-msg success'; document.getElementById('r-nombre').value = ''; document.getElementById('r-texto').value = ''; if (ratingInput) ratingInput.checked = false; cargarResenas(); }
+  btn.disabled = false; btn.textContent = 'Enviar reseña →';
+}
+
+// ── UTILS ────────────────────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+  if (id === 'home') cargarResenas();
+}
+
+function scrollToId(id) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+}
+
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('login-page').classList.contains('active')) doLogin();
+});
+</script>
+
+</body>
+</html>
