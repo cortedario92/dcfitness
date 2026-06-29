@@ -274,6 +274,7 @@
   .tipo-badge.tabata { border-color: #c084fc; color: #c084fc; }
   .tipo-badge.libre { border-color: #555; color: #555; }
   .tipo-badge.muscu_open { border-color: #60b0ff; color: #60b0ff; }
+  .muscu-open-dropdown { position:absolute; top:100%; left:0; right:0; background:#1a1a1a; border:1px solid #2a2a2a; z-index:200; max-height:180px; overflow-y:auto; display:none; border-radius:0 0 4px 4px; }
   .tipo-badge.rondas { border-color: #f5a623; color: #f5a623; }
   .ej-form-row { display: grid; gap: 5px; align-items: center; margin-bottom: 5px; }
   .yt-btn-small { background: rgba(255,77,77,0.1); border: 1px solid rgba(255,77,77,0.3); color: #ff6b6b; font-size: 0.68rem; padding: 0.25rem 0.5rem; cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap; }
@@ -1095,15 +1096,158 @@ function buildSubForm(tipo, rutinaId) {
     </div>`;
 }
 
+const MUSCU_OPEN_MAP = {
+  'Maq. Gemelos': 2, 'Maq. Pat Gluetos': 3, 'Maq. Abdominal': 4,
+  'Sillon Cuadriceps': 5, 'Sillon Izquios': 6, 'Sillon Aductores': 7, 'Sillones Abductores': 8,
+  'Polea Simple': 9, 'Polea Doble': 10, 'Maq Press Hombros': 11, 'Maq. Mariposa': 12,
+  'Maq. Pecho Guiada': 13, 'Maq. Remo Guiada': 14, 'Maq. Curl de Biceps': 15,
+  'Dorsalera Barra Toma Prono': 16, 'Dorsalera Barra Toma Supina': 16, 'Dorsalera Agarre Supino': 16,
+  'Banco Plano': 17, 'Banco Inclinado': 18, 'Banco Scott': 19, 'Prensa Basculante': 20,
+  'Maq. Traccion dorsal': 22, 'Dominada Asistida': 24, 'Fondos Guiados': 24,
+  'Maq. Triceps Guiado': 28, 'Pecho HAMMER': 30, 'Hombros HAMMER': 31, 'Remo HAMMER': 32,
+  'Maq. Elevacion de cadera ROJA': 33, 'Maq. Sentadilla Roja': 34, 'Remo Negro 2do': 35,
+  'Maq. Elevacion de cadera NEGRA': 36, 'Maq. Sumo c/ Cinturon': 37, 'Smith': 51, 'Remo Bajo': 55
+};
+let _acMatches = [];
+function showMuscuOpenAC(nameId, maqId) {
+  const input = document.getElementById(nameId);
+  const dd = document.getElementById('ac-dd-' + nameId);
+  if (!input || !dd) return;
+  const val = input.value.toLowerCase().trim();
+  if (!val) { dd.style.display = 'none'; return; }
+  _acMatches = Object.keys(MUSCU_OPEN_MAP).filter(k => k.toLowerCase().includes(val));
+  if (!_acMatches.length) { dd.style.display = 'none'; return; }
+  dd.innerHTML = _acMatches.map((m, i) =>
+    `<div class="muscu-open-opt" onmousedown="pickMuscuOpenEj('${nameId}','${maqId}',${i})"><span>${esc(m)}</span><span class="maq-tag">N° ${MUSCU_OPEN_MAP[m]}</span></div>`
+  ).join('');
+  dd.style.display = 'block';
+}
+function pickMuscuOpenEj(nameId, maqId, idx) {
+  const nombre = _acMatches[idx];
+  const input = document.getElementById(nameId);
+  const maqEl = document.getElementById(maqId);
+  const dd = document.getElementById('ac-dd-' + nameId);
+  if (input) input.value = nombre;
+  if (maqEl) maqEl.value = MUSCU_OPEN_MAP[nombre] ?? '';
+  if (dd) dd.style.display = 'none';
+  const videoId = nameId.replace('ej-nombre-', 'ej-video-');
+  const videoEl = document.getElementById(videoId);
+  if (videoEl && !videoEl.value) {
+    buscarVideoYoutube(nombre).then(url => { if (url) videoEl.value = url; });
+  }
+}
+
+const VARIANTES_MUSC = ['Hipertrofia','Fuerza','Fuerza máxima','Potencia','Resistencia muscular','Tonificación','Funcional'];
+const GRUPOS_MUSC = ['Piernas','Pecho','Espalda','Bíceps','Tríceps','Hombros','Core / abdomen','Cuerpo completo'];
+
+// ── INIT ────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  if (typeof supabase === 'undefined') {
+    console.error('Supabase CDN no cargó. Verificá tu conexión a internet.');
+    return;
+  }
+  sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  cargarResenas();
+  const { data: { session } } = await sbClient.auth.getSession();
+  if (session) await handleAuthUser(session.user);
+});
+
+async function handleAuthUser(user) {
+  currentUser = user;
+  try {
+    if (user.email === ADMIN_EMAIL) {
+      await mostrarAdmin();
+    } else {
+      await mostrarDashboard(user);
+    }
+  } catch (e) {
+    console.error('Error al cargar panel:', e);
+    const err = document.getElementById('login-error');
+    err.textContent = 'Error al cargar el panel: ' + e.message;
+    err.style.display = 'block';
+    const btn = document.getElementById('btn-login');
+    if (btn) { btn.disabled = false; btn.textContent = 'Ingresar →'; }
+    showPage('login-page');
+  }
+}
+
+// ── AUTH ────────────────────────────────────────────────────────
+async function doLogin() {
+  const email = document.getElementById('user-input').value.trim();
+  const pass = document.getElementById('pass-input').value;
+  const err = document.getElementById('login-error');
+  const btn = document.getElementById('btn-login');
+
+  if (!email || !pass) { err.textContent = 'Completá email y contraseña.'; err.style.display = 'block'; return; }
+
+  if (!sbClient) {
+    err.textContent = 'Error de conexión: recargá la página con internet activo.';
+    err.style.display = 'block';
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'Ingresando...';
+  try {
+    const { data, error } = await sbClient.auth.signInWithPassword({ email, password: pass });
+    if (error) {
+      btn.disabled = false; btn.textContent = 'Ingresar →';
+      err.textContent = 'Email o contraseña incorrectos.'; err.style.display = 'block'; return;
+    }
+    err.style.display = 'none';
+    btn.textContent = '✓ Cargando tu rutina...';
+    btn.style.background = '#181818';
+    btn.style.color = 'var(--accent)';
+    btn.style.border = '1px solid var(--accent)';
+    await handleAuthUser(data.user);
+    btn.disabled = false; btn.textContent = 'Ingresar →';
+    btn.style.background = ''; btn.style.color = ''; btn.style.border = '';
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Ingresar →';
+    err.textContent = 'Error: ' + e.message;
+    err.style.display = 'block';
+    console.error('Login error:', e);
+  }
+}
+
+async function doLogout() {
+  await sbClient.auth.signOut();
+  currentUser = null;
+  selectedAlumnoId = null;
+  document.getElementById('user-input').value = '';
+  document.getElementById('pass-input').value = '';
+  showPage('home');
+}
+
+// ── DASHBOARD ALUMNO ────────────────────────────────────────────
+async function mostrarDashboard(user) {
+  const { data: perfil } = await sbClient.from('perfiles').select('*').eq('user_id', user.id).single();
+  const nombre = perfil?.nombre || user.email.split('@')[0];
+
+  document.getElementById('dash-username').textContent = nombre;
+  document.getElementById('dash-firstname').textContent = nombre.split(' ')[0].toUpperCase();
+  document.getElementById('dash-initials').textContent = nombre.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
+
+  const { data: rutinas, error } = await sbClient
+    .from('rutinas')
+    .select('*, bloques(*, ejercicios(*))')
+    .eq('alumno_id', user.id)
+    .order('created_at', { ascending: false });
+
+  renderDashboard(rutinas || []);
+  showPage('dashboard');
+}
+
+
 function ejGridCols(tipo) {
-  if (tipo === 'musculacion' || tipo === 'muscu_open') return 'grid-template-columns:2fr 56px 56px 70px 1fr 28px';
-  if (tipo === 'emom') return 'grid-template-columns:0.5fr 2fr 0.6fr 0.7fr 1fr 28px';
-  if (tipo === 'tabata') return 'grid-template-columns:2fr 1fr 28px';
-  return 'grid-template-columns:2fr 0.9fr 1fr 28px';
+  if (tipo === 'musculacion') return 'grid-template-columns:2fr 0.6fr 0.6fr 0.7fr 1fr auto';
+  if (tipo === 'muscu_open') return 'grid-template-columns:2fr 0.5fr 0.5fr 0.6fr 0.5fr 1fr auto';
+  if (tipo === 'emom') return 'grid-template-columns:0.5fr 2fr 0.6fr 0.7fr 1fr auto';
+  if (tipo === 'tabata') return 'grid-template-columns:2fr 1fr auto';
+  return 'grid-template-columns:2fr 0.9fr 1fr auto';
 }
 
 function ejColLabels(tipo) {
-  if (tipo === 'musculacion' || tipo === 'muscu_open') return '<span>Ejercicio</span><span>Series</span><span>Reps</span><span>Peso</span><span>YouTube</span><span></span>';
+  if (tipo === 'musculacion') return '<span>Ejercicio</span><span>Series</span><span>Reps</span><span>Peso</span><span>YouTube</span><span></span>';
+  if (tipo === 'muscu_open') return '<span>Ejercicio</span><span>Series</span><span>Reps</span><span>Peso</span><span>N° Maq.</span><span>YouTube</span><span></span>';
   if (tipo === 'emom') return '<span>Min</span><span>Ejercicio</span><span>Reps</span><span>Carga</span><span>YouTube</span><span></span>';
   if (tipo === 'tabata') return '<span>Ejercicio</span><span>YouTube</span><span></span>';
   return `<span>Ejercicio</span><span>${tipo==='chipper'?'Cantidad':'Reps/Tiempo'}</span><span>YouTube</span><span></span>`;
@@ -1112,11 +1256,22 @@ function ejColLabels(tipo) {
 function buildEjRow(tipo, rutinaId, idx) {
   const id = `${rutinaId}-${idx}`;
   const yt = `<button class="yt-btn-small" onclick="abrirVideo('ej-video-${id}')">▶ ver</button>`;
-  if (tipo === 'musculacion' || tipo === 'muscu_open') return `<div class="ej-form-row" style="grid-template-columns:2fr 56px 56px 70px 1fr 28px">
+  if (tipo === 'musculacion') return `<div class="ej-form-row" style="grid-template-columns:2fr 0.6fr 0.6fr 0.7fr 1fr auto">
     <input type="text" placeholder="Ejercicio" id="ej-nombre-${id}">
     <input type="number" placeholder="4" id="ej-series-${id}" min="1">
     <input type="text" placeholder="10" id="ej-reps-${id}">
     <input type="text" placeholder="60kg" id="ej-peso-${id}">
+    <input type="url" placeholder="https://..." id="ej-video-${id}">
+    ${yt}</div>`;
+  if (tipo === 'muscu_open') return `<div class="ej-form-row" style="grid-template-columns:2fr 0.5fr 0.5fr 0.6fr 0.5fr 1fr auto">
+    <div style="position:relative">
+      <input type="text" placeholder="Ejercicio" id="ej-nombre-${id}" oninput="showMuscuOpenAC('ej-nombre-${id}','ej-maq-${id}')" onblur="setTimeout(()=>{const d=document.getElementById('ac-dd-ej-nombre-${id}');if(d)d.style.display='none'},200)" autocomplete="off" style="width:100%">
+      <div id="ac-dd-ej-nombre-${id}" class="muscu-open-dropdown"></div>
+    </div>
+    <input type="number" placeholder="4" id="ej-series-${id}" min="1">
+    <input type="text" placeholder="10" id="ej-reps-${id}">
+    <input type="text" placeholder="60kg" id="ej-peso-${id}">
+    <input type="text" placeholder="N°" id="ej-maq-${id}" style="text-align:center">
     <input type="url" placeholder="https://..." id="ej-video-${id}">
     ${yt}</div>`;
   if (tipo === 'tabata') return `<div class="ej-form-row" style="grid-template-columns:2fr 1fr 28px">
