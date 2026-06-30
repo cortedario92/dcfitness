@@ -710,17 +710,23 @@ function renderBloqueAlumno(b) {
   let thead = '', tbody = '';
   const ytBtn = (url) => url ? `<a href="${esc(url)}" target="_blank" class="yt-link-red">▶ YT</a>` : '—';
   const numCircle = (i) => `<div class="ex-num-circle">${String(i+1).padStart(2,'0')}</div>`;
-  if (tipo === 'musculacion' || tipo === 'muscu_open') {
+  if (tipo === 'musculacion') {
     thead = '<tr><th>#</th><th>Ejercicio</th><th>Series × Reps</th><th>Peso</th><th>Tutorial</th></tr>';
     tbody = ejercicios.map((e, i) => {
       const peso = e.notas?.startsWith('Peso:') ? e.notas.replace('Peso:','').trim() : (e.notas || '');
-      return `<tr><td>${numCircle(i)}</td><td><span class="ex-name">${esc(e.nombre)}</span></td><td><span class="ex-amount">${e.series ? e.series+' × ':'' }${esc(e.reps||'')}</span></td><td style="color:#999;font-size:0.85rem">${esc(peso)}</td><td>${ytBtn(e.video_url)}</td></tr>`;
+      return '<tr><td>' + numCircle(i) + '</td><td><span class="ex-name">' + esc(e.nombre) + '</span></td><td><span class="ex-amount">' + (e.series ? e.series+' × ' : '') + esc(e.reps||'') + '</span></td><td style="color:#999;font-size:0.85rem">' + esc(peso) + '</td><td>' + ytBtn(e.video_url) + '</td></tr>';
     }).join('');
-  } else if (tipo === 'emom') {
-    thead = '<tr><th>Minuto</th><th>Ejercicio</th><th>Reps</th><th>Tutorial</th></tr>';
+  } else if (tipo === 'muscu_open') {
+    thead = '<tr><th>#</th><th>Ejercicio</th><th>Series × Reps</th><th>Peso</th><th>N°<br>Maq.</th><th>Tutorial</th></tr>';
     tbody = ejercicios.map((e, i) => {
-      const min = (e.notas && !e.notas.startsWith('Peso:')) ? e.notas : `Min ${i+1}`;
-      return `<tr><td style="font-size:0.75rem;color:var(--accent);font-weight:700">${esc(min)}</td><td><span class="ex-name">${esc(e.nombre)}</span></td><td><span class="ex-amount">${esc(e.reps||'')}</span></td><td>${ytBtn(e.video_url)}</td></tr>`;
+      const notas = e.notas || '';
+      let peso = '', maq = '';
+      if (notas.includes('|')) {
+        notas.split('|').forEach(p => { const t = p.trim(); if (t.startsWith('Maq:')) maq = t.replace('Maq:','').trim(); else if (t.startsWith('Peso:')) peso = t.replace('Peso:','').trim(); });
+      } else if (notas.startsWith('Maq:')) { maq = notas.replace('Maq:','').trim(); }
+      else { peso = notas.startsWith('Peso:') ? notas.replace('Peso:','').trim() : notas; }
+      const maqBadge = maq ? '<span style="background:rgba(212,196,74,0.15);color:#d4c44a;border:1px solid #d4c44a;border-radius:4px;padding:2px 8px;font-weight:700">' + esc(maq) + '</span>' : '—';
+      return '<tr><td>' + numCircle(i) + '</td><td><span class="ex-name">' + esc(e.nombre) + '</span></td><td><span class="ex-amount">' + (e.series ? e.series+' × ' : '') + esc(e.reps||'') + '</span></td><td style="color:#999;font-size:0.85rem">' + esc(peso) + '</td><td style="text-align:center">' + maqBadge + '</td><td>' + ytBtn(e.video_url) + '</td></tr>';
     }).join('');
   } else {
     const repLabel = tipo === 'chipper' ? 'Cantidad' : 'Reps / Tiempo';
