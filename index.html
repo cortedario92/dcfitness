@@ -778,13 +778,32 @@ async function seleccionarAlumno(userId, nombre) {
   await cargarRutinasAdmin(userId);
 }
 
-async function cargarRutinasAdmin(userId) {
+async function cargarRutinasAdmin(userId, restoreRutinaId) {
   const { data } = await sbClient
     .from('rutinas')
     .select('*, bloques(*, ejercicios(*))')
     .eq('alumno_id', userId)
     .order('created_at', { ascending: false });
   renderRutinasAdmin(data || []);
+  if (restoreRutinaId) {
+    const claseContent = document.getElementById('admin-clase-content-' + restoreRutinaId);
+    if (claseContent) {
+      const grupoSection = claseContent.closest('.admin-grupo-section');
+      if (grupoSection) {
+        document.querySelectorAll('.admin-grupo-section').forEach(s => s.style.display = 'none');
+        grupoSection.style.display = 'block';
+        const gi = [...document.querySelectorAll('.admin-grupo-section')].indexOf(grupoSection);
+        document.querySelectorAll('.admin-grupo-tab-btn').forEach(b => b.classList.remove('active'));
+        const grupoBtn = document.querySelectorAll('.admin-grupo-tab-btn')[gi];
+        if (grupoBtn) grupoBtn.classList.add('active');
+        grupoSection.querySelectorAll('[id^="admin-clase-content-"]').forEach(c => c.style.display = 'none');
+        claseContent.style.display = 'block';
+        grupoSection.querySelectorAll('.admin-clase-tab-btn').forEach(b => b.classList.remove('active'));
+        const claseBtn = grupoSection.querySelector('[onclick*="' + restoreRutinaId + '"]');
+        if (claseBtn) claseBtn.classList.add('active');
+      }
+    }
+  }
 }
 
 function selGrupoTabAdmin(gi, btn) {
@@ -1021,7 +1040,7 @@ async function guardarEdicionBloque(bloqueId) {
     }
   }
   if (btn) { btn.disabled = false; btn.textContent = hasError ? 'Error — reintentar' : 'Guardar cambios'; }
-  if (!hasError) await cargarRutinasAdmin(selectedAlumnoId);
+  if (!hasError) await cargarRutinasAdmin(selectedAlumnoId, b.rutina_id);
 }
 
 // ── CRUD ADMIN ───────────────────────────────────────────────────
@@ -1263,7 +1282,7 @@ async function guardarEditRutina(rutinaId) {
   if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
   const { error } = await sbClient.from('rutinas').update({ titulo, dia, notas }).eq('id', rutinaId);
   if (error) { alert('Error: ' + error.message); if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; } return; }
-  await cargarRutinasAdmin(selectedAlumnoId);
+  await cargarRutinasAdmin(selectedAlumnoId, rutinaId);
 }
 
 async function eliminarRutina(rutinaId) {
@@ -1345,7 +1364,7 @@ async function crearBloque(rutinaId) {
   if (toInsert.length) await sbClient.from('ejercicios').insert(toInsert);
 
   toggleFormBloque(rutinaId);
-  await cargarRutinasAdmin(selectedAlumnoId);
+  await cargarRutinasAdmin(selectedAlumnoId, rutinaId);
 }
 
 async function eliminarBloque(bloqueId) {
