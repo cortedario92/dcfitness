@@ -519,9 +519,7 @@
     <p class="dash-sub" id="dash-sub">Tus rutinas personalizadas</p>
     <div class="dash-cards">
       <div class="dash-card"><div class="dash-card-label">Rutinas</div><div class="dash-card-value" id="dash-total-rutinas">—</div><div class="dash-card-desc">Asignadas</div></div>
-      <div class="dash-card"><div class="dash-card-label">Ejercicios</div><div class="dash-card-value" id="dash-total-ejercicios">—</div><div class="dash-card-desc">En total</div></div>
-      <div class="dash-card"><div class="dash-card-label">Bloques</div><div class="dash-card-value" id="dash-total-bloques">—</div><div class="dash-card-desc">De entrenamiento</div></div>
-    <div class="dash-card"><div class="dash-card-label">Completadas</div><div class="dash-card-value" id="dash-completadas" style="color:#1D9E75">—</div><div class="dash-card-desc">Este mes</div></div>
+      <div class="dash-card"><div class="dash-card-label">Completadas</div><div class="dash-card-value" id="dash-completadas" style="color:#1D9E75">—</div><div class="dash-card-desc">Este mes</div></div>
       <div class="dash-card"><div class="dash-card-label">Faltantes</div><div class="dash-card-value" id="dash-faltantes" style="color:#E24B4A">—</div><div class="dash-card-desc">Por hacer</div></div>
     </div>
     
@@ -774,11 +772,7 @@ function selClaseTab(gi, rutinaId, btn) {
 function renderDashboard(rutinas, completadaSet) {
   completadaSet = completadaSet || new Set();
   const container = document.getElementById('dash-rutinas-container');
-  const totalBloques = rutinas.reduce((s, r) => s + (r.bloques || []).length, 0);
-  const totalEjer = rutinas.reduce((s, r) => s + (r.bloques || []).reduce((s2, b) => s2 + (b.ejercicios || []).length, 0), 0);
   document.getElementById('dash-total-rutinas').textContent = rutinas.length;
-  document.getElementById('dash-total-ejercicios').textContent = totalEjer;
-  document.getElementById('dash-total-bloques').textContent = totalBloques;
   const totalCompletadas = rutinas.filter(r => completadaSet.has(r.id)).length;
   document.getElementById('dash-completadas').textContent = totalCompletadas;
   document.getElementById('dash-faltantes').textContent = rutinas.length - totalCompletadas;
