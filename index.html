@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Darío Corte · Personal Trainer</title>
+<link rel="apple-touch-icon" href="/dcfitness/apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -217,6 +218,11 @@
   .clase-tab-btn { background: none; border: 1px solid #1e1e1e; color: #666; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.72rem; letter-spacing: 1px; text-transform: uppercase; padding: 0.4rem 1rem; transition: all .2s; }
   .clase-tab-btn:hover { border-color: #2a2a2a; color: #999; }
   .clase-tab-btn.active { border-color: var(--accent); color: var(--accent); }
+  .clase-tab-btn { position: relative; }
+  .clase-tab-hidden { opacity: 0.5; }
+  .clase-hidden-badge { position: absolute; top: -6px; right: -6px; width: 14px; height: 14px; background: #E24B4A; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .visible-toggle-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 0.66rem; color: #999; border: 1px solid #252525; border-radius: 20px; padding: 3px 10px; cursor: pointer; white-space: nowrap; }
+  .visible-toggle-pill input { accent-color: var(--accent); cursor: pointer; }
 
   /* ADMIN */
   #admin-page { min-height: 100vh; background: #0d0d0d; }
@@ -630,6 +636,7 @@ async function mostrarDashboard(user) {
     .from('rutinas')
     .select('*, bloques(*, ejercicios(*))')
     .eq('alumno_id', user.id)
+    .eq('visible', true)
     .order('created_at', { ascending: false });
 
   renderDashboard(rutinas || []);
@@ -827,7 +834,8 @@ function renderAdminRutinaCardHTML(r) {
   return `<div class="admin-rutina-card" id="rutina-card-${r.id}">
       <div class="admin-rutina-header">
         <div><span class="admin-rutina-titulo">${esc(r.titulo)}</span><span class="admin-rutina-dia"> · ${esc(r.dia)}</span></div>
-        <div style="display:flex;gap:6px">
+        <div style="display:flex;gap:6px;align-items:center">
+          <label class="visible-toggle-pill"><input type="checkbox" ${r.visible!==false?'checked':''} onchange="toggleVisibleRutina(${r.id}, this.checked)"> Visible para alumno</label>
           <button class="btn-sm" onclick="toggleEditRutina(${r.id})">Editar rutina</button>
           <button class="btn-sm danger" onclick="eliminarRutina(${r.id})">Eliminar</button>
         </div>
@@ -869,7 +877,7 @@ function renderRutinasAdmin(rutinas) {
     const sectionsHTML = grupos.map((g, gi) => {
       const grupoRutinas = rutinas.filter(r => r.grupo === g).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
       const claseNav = `<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1.5rem">
-        ${grupoRutinas.map((r, ri) => `<button class="clase-tab-btn${ri===0?' active':''}" onclick="selClaseTabAdmin(${gi},${r.id},this)">${esc(r.titulo)}</button>`).join('')}
+        ${grupoRutinas.map((r, ri) => `<button class="clase-tab-btn${ri===0?' active':''}${r.visible===false?' clase-tab-hidden':''}" onclick="selClaseTabAdmin(${gi},${r.id},this)">${esc(r.titulo)}${r.visible===false?'<span class="clase-hidden-badge" title="Oculta para el alumno"><svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.8 21.8 0 0 1 5.06-6.06M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.8 21.8 0 0 1-2.16 3.19M1 1l22 22"/></svg></span>':''}</button>`).join('')}
       </div>`;
       const clasesHTML = grupoRutinas.map((r, ri) => `
         <div class="admin-clase-content" id="admin-clase-content-${r.id}" style="${ri!==0?'display:none':''}">
@@ -885,7 +893,8 @@ function renderRutinasAdmin(rutinas) {
     return `<div class="admin-rutina-card" id="rutina-card-${r.id}">
       <div class="admin-rutina-header">
         <div><span class="admin-rutina-titulo">${esc(r.titulo)}</span><span class="admin-rutina-dia"> · ${esc(r.dia)}</span></div>
-        <div style="display:flex;gap:6px">
+        <div style="display:flex;gap:6px;align-items:center">
+          <label class="visible-toggle-pill"><input type="checkbox" ${r.visible!==false?'checked':''} onchange="toggleVisibleRutina(${r.id}, this.checked)"> Visible para alumno</label>
           <button class="btn-sm" onclick="toggleEditRutina(${r.id})">Editar rutina</button>
           <button class="btn-sm danger" onclick="eliminarRutina(${r.id})">Eliminar</button>
         </div>
@@ -1123,7 +1132,7 @@ function buildSubForm(tipo, rutinaId) {
 
 const MUSCU_OPEN_MAP = {
   'Maq. Gemelos': 2, 'Maq. Pat Gluetos': 3, 'Maq. Abdominal': 4,
-  'Sillon Cuadriceps': 5, 'Sillon Izquios': 6, 'Sillon Aductores': 7, 'Sillones Abductores': 8,
+  'Sillon Cuadriceps': 5, 'Sillon Isquiotibiales': 6, 'Sillon Aductores': 7, 'Sillones Abductores': 8,
   'Polea Simple': 9, 'Polea Doble': 10, 'Maq Press Hombros': 11, 'Maq. Mariposa': 12,
   'Maq. Pecho Guiada': 13, 'Maq. Remo Guiada': 14, 'Maq. Curl de Biceps': 15,
   'Dorsalera Barra Toma Prono': 16, 'Dorsalera Barra Toma Supina': 16, 'Dorsalera Agarre Supino': 16,
@@ -1289,6 +1298,11 @@ async function eliminarRutina(rutinaId) {
   if (!confirm('¿Eliminar esta rutina y todos sus bloques y ejercicios?')) return;
   await sbClient.from('rutinas').delete().eq('id', rutinaId);
   await cargarRutinasAdmin(selectedAlumnoId);
+}
+
+async function toggleVisibleRutina(rutinaId, checked) {
+  const { error } = await sbClient.from('rutinas').update({ visible: checked }).eq('id', rutinaId);
+  if (error) { alert('Error: ' + error.message); }
 }
 
 async function crearBloque(rutinaId) {
