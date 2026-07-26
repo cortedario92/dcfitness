@@ -682,6 +682,7 @@ async function doLogin() {
 }
 
 async function doLogout() {
+  detenerChequeoSuspension();
   await sbClient.auth.signOut();
   currentUser = null;
   selectedAlumnoId = null;
@@ -691,10 +692,33 @@ async function doLogout() {
 }
 
 // ── DASHBOARD ALUMNO ────────────────────────────────────────────
+let __suspensionCheckInterval = null;
+let __suspensionVisHandler = null;
+function iniciarChequeoSuspension(userId) {
+  if (__suspensionCheckInterval) clearInterval(__suspensionCheckInterval);
+  if (__suspensionVisHandler) document.removeEventListener('visibilitychange', __suspensionVisHandler);
+  const check = async () => {
+    const { data: perfilActual } = await sbClient.from('perfiles').select('activo').eq('user_id', userId).single();
+    if (perfilActual?.activo === false) {
+      clearInterval(__suspensionCheckInterval);
+      __suspensionCheckInterval = null;
+      showPage('suspended-page');
+    }
+  };
+  __suspensionCheckInterval = setInterval(check, 30000);
+  __suspensionVisHandler = () => { if (document.visibilityState === 'visible') check(); };
+  document.addEventListener('visibilitychange', __suspensionVisHandler);
+}
+function detenerChequeoSuspension() {
+  if (__suspensionCheckInterval) { clearInterval(__suspensionCheckInterval); __suspensionCheckInterval = null; }
+  if (__suspensionVisHandler) { document.removeEventListener('visibilitychange', __suspensionVisHandler); __suspensionVisHandler = null; }
+}
+
 async function mostrarDashboard(user) {
   const { data: perfil } = await sbClient.from('perfiles').select('*').eq('user_id', user.id).single();
   const nombre = perfil?.nombre || user.email.split('@')[0];
   if (perfil?.activo === false) { showPage('suspended-page'); return; }
+  iniciarChequeoSuspension(user.id);
 
   document.getElementById('dash-username').textContent = nombre;
   document.getElementById('dash-firstname').textContent = nombre.split(' ')[0].toUpperCase();
@@ -1796,7 +1820,8 @@ async function eliminarRutina(rutinaId) {
 
 async function toggleVisibleRutina(rutinaId, checked) {
   const { error } = await sbClient.from('rutinas').update({ visible: checked }).eq('id', rutinaId);
-  if (error) { alert('Error: ' + error.message); }
+  if (error) { alert('Error: ' + error.message); return; }
+  await cargarRutinasAdmin(selectedAlumnoId, rutinaId);
 }
 
 async function crearBloque(rutinaId) {
