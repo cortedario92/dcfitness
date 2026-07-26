@@ -333,6 +333,25 @@
   .completar-btn { background: none; border: 1px solid #2a2a2a; color: #999; padding: 0.4rem 0.9rem; border-radius: 20px; font-size: 0.68rem; cursor: pointer; white-space: nowrap; }
   .completar-btn.completada { background: rgba(29,158,117,0.15); color: #1D9E75; border-color: #1D9E75; font-weight: 700; }
 
+  .iniciar-timer-btn { margin-left: auto; background: var(--accent); color: #0d0d0d; border: none; border-radius: 20px; padding: 5px 14px; font-size: 0.72rem; font-weight: 700; cursor: pointer; }
+  .especial-ajuste-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:0.7rem; }
+  .especial-ajuste-label { font-size:0.8rem; color:#999; }
+  .especial-fase-trabajo { color:#1D9E75; }
+  .especial-fase-descanso { color:#f1f98a; }
+
+  .copiar-modal { background: #111; border: 1px solid #252525; border-radius: 16px; padding: 1.5rem; width: min(92vw, 380px); max-height: 80vh; overflow-y: auto; position: relative; text-align: left; }
+  .copiar-list-item { padding: 10px 12px; border: 1px solid #252525; border-radius: 8px; margin-bottom: 6px; cursor: pointer; font-size: 0.85rem; }
+  .copiar-list-item:hover { border-color: var(--accent); }
+  .copiar-breadcrumb { font-size: 0.72rem; color: #999; margin-bottom: 0.8rem; }
+  .copiar-titulo-modal { font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px; font-size: 1.2rem; margin-bottom: 0.4rem; }
+
+  .alumno-menu-btn { background: none; border: none; color: #999; font-size: 1.1rem; cursor: pointer; padding: 0 4px; line-height: 1; }
+  .alumno-menu-btn:hover { color: var(--accent); }
+  .alumno-menu-dropdown { position: relative; margin-top: 6px; display: flex; flex-direction: column; gap: 4px; background: #161616; border: 1px solid #252525; border-radius: 8px; padding: 6px; }
+  .alumno-menu-dropdown button { background: none; border: none; color: #ccc; font-size: 0.78rem; text-align: left; padding: 6px 8px; cursor: pointer; border-radius: 6px; }
+  .alumno-menu-dropdown button:hover { background: #222; }
+  .alumno-suspendido-badge { display: inline-block; background: rgba(226,75,74,0.15); color: #E24B4A; border: 1px solid #E24B4A; border-radius: 10px; padding: 1px 6px; font-size: 0.62rem; font-weight: 700; margin-left: 4px; vertical-align: middle; }
+
   .suspend-wrap { text-align: center; max-width: 340px; padding: 2rem; }
   .suspend-icon { font-size: 3rem; margin-bottom: 1rem; }
   .suspend-title { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; letter-spacing: 1px; margin-bottom: 0.6rem; }
@@ -796,6 +815,8 @@ function renderDashboard(rutinas, completadaSet) {
 function renderBloqueAlumno(b) {
   window.__bloqueDescansoMap = window.__bloqueDescansoMap || {};
   window.__bloqueDescansoMap[b.id] = b.descanso;
+  window.__bloqueDataMap = window.__bloqueDataMap || {};
+  window.__bloqueDataMap[b.id] = { tipo: b.tipo, nombre: b.nombre, descanso: b.descanso, duracion: b.duracion, notas: b.notas };
   const tipo = b.tipo || 'libre';
   const ejercicios = (b.ejercicios || []).sort((a, c) => a.orden - c.orden);
   let extraInfo = '';
@@ -834,6 +855,7 @@ function renderBloqueAlumno(b) {
       <span class="tipo-badge ${tipo}">${TIPO_LABELS[tipo]||tipo}</span>
       <span style="font-weight:700;font-size:0.88rem">${esc(b.nombre)}</span>
       ${extraInfo}
+      ${['tabata','emom','amrap'].includes(tipo) ? `<button class="iniciar-timer-btn" onclick="abrirTimerEspecial(${b.id})">▶ Iniciar</button>` : ''}
     </div>
     ${b.descanso ? `<div style="font-size:0.75rem;color:#666;margin-bottom:8px">⏱ Descanso: ${esc(b.descanso)}</div>` : ''}
     <div style="overflow-x:auto"><table class="exercise-table" style="min-width:480px"><thead>${thead}</thead><tbody>${tbody}</tbody></table></div>
@@ -857,11 +879,57 @@ async function cargarAlumnos() {
   }
   list.innerHTML = alumnos.map(a => `
     <div class="admin-alumno-item ${selectedAlumnoId === a.user_id ? 'active' : ''}" id="alumno-item-${a.user_id}" onclick="seleccionarAlumno('${a.user_id}', '${esc(a.nombre || a.email)}')">
-      <div style="font-weight:600;font-size:0.88rem">${esc(a.nombre || a.email.split('@')[0])}</div>
-      <div style="font-size:0.72rem;color:#555">${esc(a.email)}</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:4px">
+        <div>
+          <div style="font-weight:600;font-size:0.88rem">${esc(a.nombre || a.email.split('@')[0])}${a.activo===false?' <span class="alumno-suspendido-badge">Suspendido</span>':''}</div>
+          <div style="font-size:0.72rem;color:#555">${esc(a.email)}</div>
+        </div>
+        <button class="alumno-menu-btn" onclick="event.stopPropagation(); toggleAlumnoMenu('${a.user_id}')">⋯</button>
+      </div>
+      <div class="alumno-menu-dropdown" id="alumno-menu-${a.user_id}" style="display:none" onclick="event.stopPropagation()">
+        <button onclick="toggleActivoAlumno('${a.user_id}', ${a.activo===false})">${a.activo===false?'Reactivar acceso':'Suspender acceso'}</button>
+        <button onclick="cambiarEmailAlumno('${a.user_id}')">Cambiar email</button>
+        <button onclick="cambiarPasswordAlumno('${a.user_id}')">Cambiar contraseña</button>
+      </div>
     </div>`).join('');
 }
 
+function toggleAlumnoMenu(userId) {
+  document.querySelectorAll('.alumno-menu-dropdown').forEach(el => {
+    if (el.id !== 'alumno-menu-' + userId) el.style.display = 'none';
+  });
+  const el = document.getElementById('alumno-menu-' + userId);
+  if (el) el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+}
+document.addEventListener('click', () => {
+  document.querySelectorAll('.alumno-menu-dropdown').forEach(el => el.style.display = 'none');
+});
+async function toggleActivoAlumno(userId, reactivar) {
+  const msg = reactivar ? '¿Reactivar el acceso de este alumno?' : '¿Suspender el acceso de este alumno? No podrá iniciar sesión hasta que lo reactives.';
+  if (!confirm(msg)) return;
+  const { error } = await sbClient.from('perfiles').update({ activo: reactivar }).eq('user_id', userId);
+  if (error) { alert('Error al actualizar el acceso: ' + error.message); return; }
+  await cargarAlumnos();
+}
+async function cambiarEmailAlumno(userId) {
+  const nuevoEmail = prompt('Nuevo email para este alumno:');
+  if (!nuevoEmail) return;
+  if (!confirm('¿Cambiar el email a "' + nuevoEmail + '"?')) return;
+  const { data, error } = await sbClient.functions.invoke('admin-update-alumno', { body: { userId, email: nuevoEmail } });
+  if (error || data?.error) { alert('Error al cambiar el email: ' + (data?.error || error.message)); return; }
+  await sbClient.from('perfiles').update({ email: nuevoEmail }).eq('user_id', userId);
+  alert('Email actualizado con éxito.');
+  await cargarAlumnos();
+}
+async function cambiarPasswordAlumno(userId) {
+  const nuevaPass = prompt('Nueva contraseña para este alumno (mínimo 6 caracteres):');
+  if (!nuevaPass) return;
+  if (nuevaPass.length < 6) { alert('La contraseña debe tener al menos 6 caracteres.'); return; }
+  if (!confirm('¿Cambiar la contraseña de este alumno?')) return;
+  const { data, error } = await sbClient.functions.invoke('admin-update-alumno', { body: { userId, password: nuevaPass } });
+  if (error || data?.error) { alert('Error al cambiar la contraseña: ' + (data?.error || error.message)); return; }
+  alert('Contraseña actualizada con éxito.');
+}
 async function seleccionarAlumno(userId, nombre) {
   selectedAlumnoId = userId;
   selectedAlumnoNombre = nombre;
@@ -926,6 +994,7 @@ function renderAdminRutinaCardHTML(r) {
         <div style="display:flex;gap:6px;align-items:center">
           <label class="visible-toggle-pill"><input type="checkbox" ${r.visible!==false?'checked':''} onchange="toggleVisibleRutina(${r.id}, this.checked)"> Visible para alumno</label>
           <button class="btn-sm" onclick="toggleEditRutina(${r.id})">Editar rutina</button>
+          <button class="btn-sm" onclick="abrirCopiarClase(${r.id})">Copiar</button>
           <button class="btn-sm danger" onclick="eliminarRutina(${r.id})">Eliminar</button>
         </div>
       </div>
@@ -985,6 +1054,7 @@ function renderRutinasAdmin(rutinas) {
         <div style="display:flex;gap:6px;align-items:center">
           <label class="visible-toggle-pill"><input type="checkbox" ${r.visible!==false?'checked':''} onchange="toggleVisibleRutina(${r.id}, this.checked)"> Visible para alumno</label>
           <button class="btn-sm" onclick="toggleEditRutina(${r.id})">Editar rutina</button>
+          <button class="btn-sm" onclick="abrirCopiarClase(${r.id})">Copiar</button>
           <button class="btn-sm danger" onclick="eliminarRutina(${r.id})">Eliminar</button>
         </div>
       </div>
@@ -1106,6 +1176,200 @@ function reproducirBeep() {
     osc.stop(ctx.currentTime + 0.5);
   } catch (e) {}
 }
+function parseNumEspecial(str) {
+  if (!str) return null;
+  const m = String(str).match(/\d+/);
+  return m ? parseInt(m[0], 10) : null;
+}
+function parseSegEspecial(str) {
+  if (!str) return null;
+  const n = parseNumEspecial(str);
+  if (n == null) return null;
+  return /seg/i.test(str) ? n : n * 60;
+}
+function parseSegEspecialCorto(str) {
+  if (!str) return null;
+  const n = parseNumEspecial(str);
+  if (n == null) return null;
+  return /min/i.test(str) ? n * 60 : n;
+}
+function extraerCampoTabata(nombre, keyword) {
+  const re = new RegExp('(\\d+\\s*(?:seg|segundos|min|minutos)?)\\s*' + keyword, 'i');
+  const m = String(nombre||'').match(re);
+  return m ? m[1] : null;
+}
+let __especialAjustes = {};
+let __especialState = null;
+function abrirTimerEspecial(bloqueId) {
+  const data = (window.__bloqueDataMap || {})[bloqueId] || {};
+  const tipo = data.tipo;
+  if (!['tabata','emom','amrap'].includes(tipo)) return;
+  if (tipo === 'tabata') {
+    const nombre = data.nombre || '';
+    const mRondas = nombre.match(/(\d+)\s*rondas/i);
+    const rondas = mRondas ? parseInt(mRondas[1], 10) : (parseNumEspecial(data.duracion) || 8);
+    const trabajo = parseSegEspecialCorto(extraerCampoTabata(nombre, 'trabajo')) || 20;
+    const descanso = parseSegEspecialCorto(extraerCampoTabata(nombre, 'descanso')) || parseSegEspecialCorto(data.descanso) || 10;
+    __especialAjustes = { rondas, trabajo, descanso };
+  } else if (tipo === 'emom') {
+    const total = parseSegEspecial(data.duracion) || 600;
+    const intervalo = parseSegEspecial(data.notas) || 60;
+    __especialAjustes = { total, intervalo };
+  } else if (tipo === 'amrap') {
+    const total = parseSegEspecial(data.duracion) || 720;
+    __especialAjustes = { total };
+  }
+  __especialState = { tipo, bloqueId, running: false };
+  document.getElementById('especial-titulo').textContent = tipo === 'tabata' ? 'Tabata' : (tipo === 'emom' ? 'EMOM' : 'AMRAP');
+  renderEspecialAjustes();
+  document.getElementById('especial-pre-start').style.display = '';
+  document.getElementById('especial-en-curso').style.display = 'none';
+  document.querySelector('#especial-timer-modal-overlay .timer-modal').classList.remove('timer-done');
+  document.getElementById('especial-timer-modal-overlay').style.display = 'flex';
+}
+function renderEspecialAjustes() {
+  const tipo = __especialState.tipo;
+  const cont = document.getElementById('especial-ajustes');
+  let html = '';
+  if (tipo === 'tabata') {
+    html += especialAjusteRow('Rondas', 'rondas', __especialAjustes.rondas, 1);
+    html += especialAjusteRow('Trabajo (seg)', 'trabajo', __especialAjustes.trabajo, 5);
+    html += especialAjusteRow('Descanso (seg)', 'descanso', __especialAjustes.descanso, 5);
+  } else if (tipo === 'emom') {
+    html += especialAjusteRow('Intervalo (seg)', 'intervalo', __especialAjustes.intervalo, 5);
+    html += especialAjusteRow('Total (seg)', 'total', __especialAjustes.total, 30);
+  } else if (tipo === 'amrap') {
+    html += especialAjusteRow('Total (seg)', 'total', __especialAjustes.total, 30);
+  }
+  cont.innerHTML = html;
+}
+function especialAjusteRow(label, id, value, step) {
+  return '<div class="especial-ajuste-row"><span class="especial-ajuste-label">' + label + '</span><div style="display:flex;align-items:center;gap:8px"><button class="timer-step-btn" onclick="ajustarEspecialValor(&quot;' + id + '&quot;,' + (-step) + ')">−</button><span id="especial-val-' + id + '" style="min-width:40px;text-align:center;font-weight:700">' + value + '</span><button class="timer-step-btn" onclick="ajustarEspecialValor(&quot;' + id + '&quot;,' + step + ')">+</button></div></div>';
+}
+function ajustarEspecialValor(id, delta) {
+  __especialAjustes[id] = Math.max(1, (__especialAjustes[id] || 0) + delta);
+  const el = document.getElementById('especial-val-' + id);
+  if (el) el.textContent = __especialAjustes[id];
+}
+function cerrarTimerEspecial() {
+  if (__especialState && __especialState.intervalId) clearInterval(__especialState.intervalId);
+  document.getElementById('especial-timer-modal-overlay').style.display = 'none';
+  __especialState = null;
+}
+function cancelarTimerEspecial() { cerrarTimerEspecial(); }
+function iniciarTimerEspecialClick() {
+  document.getElementById('especial-pre-start').style.display = 'none';
+  document.getElementById('especial-en-curso').style.display = '';
+  const tipo = __especialState.tipo;
+  if (tipo === 'tabata') {
+    __especialState.rondaActual = 1;
+    __especialState.totalRondas = __especialAjustes.rondas;
+    __especialState.trabajoSeg = __especialAjustes.trabajo;
+    __especialState.descansoSeg = __especialAjustes.descanso;
+    __especialState.fase = 'trabajo';
+    correrFaseTabata();
+  } else if (tipo === 'emom') {
+    __especialState.rondaActual = 1;
+    __especialState.intervaloSeg = __especialAjustes.intervalo;
+    __especialState.totalRondas = Math.max(1, Math.round(__especialAjustes.total / __especialAjustes.intervalo));
+    correrFaseEmom();
+  } else if (tipo === 'amrap') {
+    document.getElementById('especial-fase').textContent = 'AMRAP';
+    document.getElementById('especial-fase').className = 'especial-fase-trabajo';
+    document.getElementById('especial-ronda-info').textContent = '';
+    correrFaseGenerica(__especialAjustes.total, function () { reproducirBeep(); mostrarEspecialTerminado(); });
+  }
+}
+function correrFaseTabata() {
+  document.getElementById('especial-fase').textContent = __especialState.fase === 'trabajo' ? 'TRABAJO' : 'DESCANSO';
+  document.getElementById('especial-fase').className = __especialState.fase === 'trabajo' ? 'especial-fase-trabajo' : 'especial-fase-descanso';
+  document.getElementById('especial-ronda-info').textContent = 'Ronda ' + __especialState.rondaActual + '/' + __especialState.totalRondas;
+  const dur = __especialState.fase === 'trabajo' ? __especialState.trabajoSeg : __especialState.descansoSeg;
+  correrFaseGenerica(dur, function () {
+    reproducirBeep();
+    if (__especialState.fase === 'trabajo') {
+      __especialState.fase = 'descanso';
+      correrFaseTabata();
+    } else {
+      if (__especialState.rondaActual >= __especialState.totalRondas) {
+        mostrarEspecialTerminado();
+      } else {
+        __especialState.rondaActual++;
+        __especialState.fase = 'trabajo';
+        correrFaseTabata();
+      }
+    }
+  });
+}
+function correrFaseEmom() {
+  document.getElementById('especial-fase').textContent = 'EMOM';
+  document.getElementById('especial-fase').className = 'especial-fase-trabajo';
+  document.getElementById('especial-ronda-info').textContent = 'Ronda ' + __especialState.rondaActual + '/' + __especialState.totalRondas;
+  reproducirBeep();
+  correrFaseGenerica(__especialState.intervaloSeg, function () {
+    if (__especialState.rondaActual >= __especialState.totalRondas) {
+      reproducirBeep();
+      mostrarEspecialTerminado();
+    } else {
+      __especialState.rondaActual++;
+      correrFaseEmom();
+    }
+  });
+}
+function __iniciarIntervaloEspecial(remainingAtStart, onDone) {
+  __especialState.startTs = Date.now();
+  __especialState.onDone = onDone;
+  if (__especialState.intervalId) clearInterval(__especialState.intervalId);
+  __especialState.intervalId = setInterval(function () {
+    const elapsed = (Date.now() - __especialState.startTs) / 1000;
+    const rem = remainingAtStart - elapsed;
+    if (rem <= 0) {
+      __especialState.remaining = 0;
+      clearInterval(__especialState.intervalId);
+      __especialState.running = false;
+      actualizarEspecialUI();
+      onDone();
+    } else {
+      __especialState.remaining = rem;
+      actualizarEspecialUI();
+    }
+  }, 200);
+}
+function correrFaseGenerica(segundos, onDone) {
+  __especialState.total = segundos;
+  __especialState.remaining = segundos;
+  __especialState.running = true;
+  document.getElementById('especial-playpause-btn').textContent = 'Pausar';
+  actualizarEspecialUI();
+  __iniciarIntervaloEspecial(segundos, onDone);
+}
+function actualizarEspecialUI() {
+  const sec = __especialState.remaining;
+  document.getElementById('especial-display').textContent = formatTimerDisplay(sec);
+  const circ = 2 * Math.PI * 52;
+  const frac = __especialState.total > 0 ? Math.max(0, Math.min(1, sec / __especialState.total)) : 0;
+  const ring = document.getElementById('especial-ring-fg');
+  ring.style.strokeDasharray = String(circ);
+  ring.style.strokeDashoffset = String(circ * (1 - frac));
+}
+function pausarTimerEspecial() {
+  if (!__especialState) return;
+  if (__especialState.running) {
+    __especialState.running = false;
+    if (__especialState.intervalId) clearInterval(__especialState.intervalId);
+    document.getElementById('especial-playpause-btn').textContent = 'Reanudar';
+  } else {
+    __especialState.running = true;
+    document.getElementById('especial-playpause-btn').textContent = 'Pausar';
+    __iniciarIntervaloEspecial(__especialState.remaining, __especialState.onDone);
+  }
+}
+function mostrarEspecialTerminado() {
+  document.getElementById('especial-fase').textContent = 'Bloque terminado';
+  document.getElementById('especial-fase').className = '';
+  document.getElementById('especial-ronda-info').textContent = '';
+  document.querySelector('#especial-timer-modal-overlay .timer-modal').classList.add('timer-done');
+}
 function actualizarTimerUI() {
   const sec = __timerState.remaining;
   document.getElementById('timer-display').textContent = formatTimerDisplay(sec);
@@ -1181,6 +1445,7 @@ function renderBloqueAdmin(b) {
     <div id="bloque-edit-form-${b.id}" style="display:none;background:#111;border:1px solid #252525;padding:1rem;margin-top:0.8rem"></div>
     <div style="display:flex;gap:6px;margin-top:8px">
       <button class="btn-sm" style="font-size:0.68rem" onclick="toggleEditBloque(${b.id})">Editar</button>
+      <button class="btn-sm" style="font-size:0.68rem" onclick="abrirCopiarBloque(${b.id})">Copiar</button>
       <button class="btn-sm danger" style="font-size:0.68rem" onclick="eliminarBloque(${b.id})">Eliminar bloque</button>
     </div>
   </div>`;
@@ -1621,6 +1886,140 @@ async function eliminarBloque(bloqueId) {
   await sbClient.from('bloques').delete().eq('id', bloqueId);
   await cargarRutinasAdmin(selectedAlumnoId);
 }
+let __copiarState = null;
+async function abrirCopiarClase(rutinaId) {
+  __copiarState = { mode: 'clase', sourceRutinaId: rutinaId, step: 1 };
+  document.getElementById('copiar-titulo-modal').textContent = 'Copiar clase';
+  document.getElementById('copiar-modal-overlay').style.display = 'flex';
+  await renderCopiarStep1();
+}
+async function abrirCopiarBloque(bloqueId) {
+  __copiarState = { mode: 'bloque', sourceBloqueId: bloqueId, step: 1 };
+  document.getElementById('copiar-titulo-modal').textContent = 'Copiar bloque';
+  document.getElementById('copiar-modal-overlay').style.display = 'flex';
+  await renderCopiarStep1();
+}
+function cerrarCopiarModal() {
+  document.getElementById('copiar-modal-overlay').style.display = 'none';
+  __copiarState = null;
+}
+function actualizarCopiarBreadcrumb() {
+  const s = __copiarState;
+  const parts = [];
+  if (s.alumnoNombre) parts.push(s.alumnoNombre);
+  if (s.grupo) parts.push(s.grupo);
+  document.getElementById('copiar-breadcrumb').textContent = parts.join(' › ');
+}
+async function renderCopiarStep1() {
+  actualizarCopiarBreadcrumb();
+  const { data } = await sbClient.from('perfiles').select('*').eq('es_admin', false).order('nombre');
+  const alumnos = data || [];
+  window.__copiarAlumnosCache = alumnos;
+  const cont = document.getElementById('copiar-contenido');
+  if (!alumnos.length) { cont.innerHTML = '<p style="color:#555;font-size:0.85rem">No hay alumnos.</p>'; return; }
+  cont.innerHTML = alumnos.map((a,i) => `<div class="copiar-list-item" onclick="seleccionarCopiarAlumnoIdx(${i})">${esc(a.nombre || a.email)}</div>`).join('');
+}
+function seleccionarCopiarAlumnoIdx(i) {
+  const a = window.__copiarAlumnosCache[i];
+  return seleccionarCopiarAlumno(a.user_id, a.nombre || a.email);
+}
+async function seleccionarCopiarAlumno(userId, nombre) {
+  __copiarState.alumnoId = userId;
+  __copiarState.alumnoNombre = nombre;
+  __copiarState.step = 2;
+  actualizarCopiarBreadcrumb();
+  const { data } = await sbClient.from('rutinas').select('grupo').eq('alumno_id', userId);
+  const grupos = [...new Set((data||[]).map(r => r.grupo).filter(Boolean))].sort();
+  window.__copiarGruposCache = grupos;
+  const cont = document.getElementById('copiar-contenido');
+  if (!grupos.length) { cont.innerHTML = '<p style="color:#555;font-size:0.85rem">Este alumno no tiene meses/grupos con clases.</p>'; return; }
+  cont.innerHTML = grupos.map((g,i) => `<div class="copiar-list-item" onclick="seleccionarCopiarGrupoIdx(${i})">${esc(g)}</div>`).join('');
+}
+function seleccionarCopiarGrupoIdx(i) {
+  const g = window.__copiarGruposCache[i];
+  return seleccionarCopiarGrupo(g);
+}
+async function seleccionarCopiarGrupo(grupo) {
+  __copiarState.grupo = grupo;
+  __copiarState.step = 3;
+  actualizarCopiarBreadcrumb();
+  const { data } = await sbClient.from('rutinas').select('id,titulo').eq('alumno_id', __copiarState.alumnoId).eq('grupo', grupo).order('titulo');
+  const clases = data || [];
+  window.__copiarClasesCache = clases;
+  const cont = document.getElementById('copiar-contenido');
+  let html = '';
+  if (!clases.length) {
+    html += '<p style="color:#555;font-size:0.85rem;margin-bottom:0.8rem">Este mes no tiene clases.</p>';
+  } else {
+    html += clases.map((c,i) => `<div class="copiar-list-item" onclick="seleccionarCopiarClaseIdx(${i})">${esc(c.titulo)}</div>`).join('');
+  }
+  if (__copiarState.mode === 'bloque') {
+    html += '<div class="copiar-list-item" style="border-style:dashed;text-align:center;color:var(--accent)" onclick="prepararNuevaClaseParaBloque()">+ Crear clase nueva</div>';
+  }
+  cont.innerHTML = html;
+}
+function seleccionarCopiarClaseIdx(i) {
+  const c = window.__copiarClasesCache[i];
+  if (__copiarState.mode === 'clase') return confirmarCopiarClase(c.id, c.titulo);
+  return confirmarCopiarBloque(c.id);
+}
+async function confirmarCopiarClase(targetRutinaId, targetTitulo) {
+  if (!confirm('Esto reemplazará el contenido de "' + targetTitulo + '" con la clase copiada. ¿Continuar?')) return;
+  await ejecutarCopiaClase(__copiarState.sourceRutinaId, targetRutinaId);
+  cerrarCopiarModal();
+  alert('Clase copiada con éxito.');
+  if (selectedAlumnoId) await cargarRutinasAdmin(selectedAlumnoId);
+}
+async function prepararNuevaClaseParaBloque() {
+  const titulo = prompt('Nombre de la nueva clase (ej: Clase 7):');
+  if (!titulo) return;
+  const dia = prompt('Día para la nueva clase (ej: Lunes):');
+  if (!dia) return;
+  const { data: newRutina, error } = await sbClient.from('rutinas').insert({ alumno_id: __copiarState.alumnoId, titulo, dia, grupo: __copiarState.grupo, visible: false }).select().single();
+  if (error) { alert('Error al crear la clase: ' + error.message); return; }
+  await confirmarCopiarBloque(newRutina.id);
+}
+async function confirmarCopiarBloque(targetRutinaId) {
+  await ejecutarCopiaBloque(__copiarState.sourceBloqueId, targetRutinaId);
+  cerrarCopiarModal();
+  alert('Bloque copiado con éxito.');
+  if (selectedAlumnoId) await cargarRutinasAdmin(selectedAlumnoId);
+}
+async function ejecutarCopiaClase(sourceRutinaId, targetRutinaId) {
+  const { data: bloques } = await sbClient.from('bloques').select('*').eq('rutina_id', sourceRutinaId).order('orden');
+  await sbClient.from('bloques').delete().eq('rutina_id', targetRutinaId);
+  await sbClient.from('rutinas').update({ visible: false }).eq('id', targetRutinaId);
+  for (const b of (bloques || [])) {
+    const { data: ejercicios } = await sbClient.from('ejercicios').select('*').eq('bloque_id', b.id).order('orden');
+    const { data: newBloque, error: bErr } = await sbClient.from('bloques').insert({
+      rutina_id: targetRutinaId, nombre: b.nombre, tipo: b.tipo, grupo_muscular: b.grupo_muscular,
+      variante: b.variante, duracion: b.duracion, descanso: b.descanso, notas: b.notas, orden: b.orden
+    }).select().single();
+    if (bErr || !newBloque) continue;
+    const nuevos = (ejercicios || []).map(e => ({
+      bloque_id: newBloque.id, nombre: e.nombre, series: e.series, reps: e.reps,
+      video_url: e.video_url, notas: e.notas, orden: e.orden
+    }));
+    if (nuevos.length) await sbClient.from('ejercicios').insert(nuevos);
+  }
+}
+async function ejecutarCopiaBloque(sourceBloqueId, targetRutinaId) {
+  const { data: b } = await sbClient.from('bloques').select('*').eq('id', sourceBloqueId).single();
+  if (!b) return;
+  const { data: ejercicios } = await sbClient.from('ejercicios').select('*').eq('bloque_id', sourceBloqueId).order('orden');
+  const { data: bls } = await sbClient.from('bloques').select('orden').eq('rutina_id', targetRutinaId).order('orden', { ascending: false }).limit(1);
+  const orden = bls && bls.length ? bls[0].orden + 1 : 0;
+  const { data: newBloque, error } = await sbClient.from('bloques').insert({
+    rutina_id: targetRutinaId, nombre: b.nombre, tipo: b.tipo, grupo_muscular: b.grupo_muscular,
+    variante: b.variante, duracion: b.duracion, descanso: b.descanso, notas: b.notas, orden: orden
+  }).select().single();
+  if (error || !newBloque) return;
+  const nuevos = (ejercicios || []).map(e => ({
+    bloque_id: newBloque.id, nombre: e.nombre, series: e.series, reps: e.reps,
+    video_url: e.video_url, notas: e.notas, orden: e.orden
+  }));
+  if (nuevos.length) await sbClient.from('ejercicios').insert(nuevos);
+}
 
 // ── CREAR ALUMNO ─────────────────────────────────────────────────
 async function crearAlumno() {
@@ -1775,6 +2174,41 @@ document.addEventListener('keydown', e => {
       <button class="timer-ctrl-btn" id="timer-playpause-btn" onclick="toggleTimerPlayPause()">Iniciar</button>
       <button class="timer-ctrl-btn" onclick="reiniciarTimer()">Reiniciar</button>
     </div>
+  </div>
+</div>
+
+<div id="especial-timer-modal-overlay" class="timer-modal-overlay">
+  <div class="timer-modal">
+    <button class="timer-close-btn" onclick="cerrarTimerEspecial()">✕</button>
+    <div id="especial-pre-start">
+      <h3 id="especial-titulo" style="font-family:'Bebas Neue',sans-serif;letter-spacing:1px;margin-bottom:1rem"></h3>
+      <div id="especial-ajustes"></div>
+      <button class="timer-ctrl-btn" onclick="iniciarTimerEspecialClick()">Iniciar</button>
+    </div>
+    <div id="especial-en-curso" style="display:none">
+      <div class="timer-ring-wrap">
+        <svg viewBox="0 0 120 120" class="timer-ring-svg">
+          <circle cx="60" cy="60" r="52" class="timer-ring-bg"></circle>
+          <circle cx="60" cy="60" r="52" class="timer-ring-fg" id="especial-ring-fg"></circle>
+        </svg>
+        <div class="timer-display" id="especial-display">00:00</div>
+      </div>
+      <div id="especial-fase" style="text-align:center;font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:1px;margin-bottom:0.3rem"></div>
+      <div id="especial-ronda-info" style="text-align:center;font-size:0.8rem;color:#999;margin-bottom:1rem"></div>
+      <div class="timer-controls">
+        <button class="timer-ctrl-btn" id="especial-playpause-btn" onclick="pausarTimerEspecial()">Pausar</button>
+        <button class="timer-ctrl-btn" onclick="cancelarTimerEspecial()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="copiar-modal-overlay" class="timer-modal-overlay">
+  <div class="copiar-modal">
+    <button class="timer-close-btn" onclick="cerrarCopiarModal()">✕</button>
+    <div class="copiar-titulo-modal" id="copiar-titulo-modal"></div>
+    <div class="copiar-breadcrumb" id="copiar-breadcrumb"></div>
+    <div id="copiar-contenido"></div>
   </div>
 </div>
 
