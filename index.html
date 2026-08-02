@@ -1685,7 +1685,7 @@ function pickMuscuOpenEj(nameId, maqId, idx) {
   const videoId = nameId.replace('ej-nombre-', 'ej-video-');
   const videoEl = document.getElementById(videoId);
   if (videoEl && !videoEl.value) {
-    buscarVideoYoutube(nombre).then(url => { if (url) videoEl.value = url; });
+    obtenerVideoSugerido(nombre).then(url => { if (url) videoEl.value = url; });
   }
 }
 
@@ -1775,6 +1775,23 @@ async function buscarVideoYoutube(query) {
     console.warn('YouTube search error:', e);
     return null;
   }
+}
+async function obtenerVideoSugerido(nombre) {
+  try {
+    const { data } = await sbClient.from('ejercicios').select('video_url').ilike('nombre', nombre).not('video_url', 'is', null);
+    if (data && data.length) {
+      const counts = {};
+      data.forEach(r => { if (r.video_url) counts[r.video_url] = (counts[r.video_url] || 0) + 1; });
+      let mejor = null, mejorCount = 0;
+      for (const url in counts) {
+        if (counts[url] > mejorCount) { mejor = url; mejorCount = counts[url]; }
+      }
+      if (mejor) return mejor;
+    }
+  } catch (e) {
+    console.warn('obtenerVideoSugerido error:', e);
+  }
+  return await buscarVideoYoutube(nombre);
 }
 
 async function crearRutina() {
@@ -1887,7 +1904,7 @@ async function crearBloque(rutinaId) {
     if (btn) { btn.disabled = true; btn.textContent = `Buscando videos (0/${sinVideo.length})...`; }
     for (let i = 0; i < sinVideo.length; i++) {
       if (btn) btn.textContent = `Buscando videos (${i+1}/${sinVideo.length})...`;
-      const url = await buscarVideoYoutube(sinVideo[i].nombre);
+      const url = await obtenerVideoSugerido(sinVideo[i].nombre);
       if (url) sinVideo[i].video_url = url;
     }
     if (btn) { btn.disabled = false; btn.textContent = 'Guardar bloque'; }
