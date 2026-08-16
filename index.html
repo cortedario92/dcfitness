@@ -835,6 +835,7 @@ function renderBloqueAlumno(b) {
   window.__bloqueDescansoMap[b.id] = b.descanso;
   window.__bloqueDataMap = window.__bloqueDataMap || {};
   window.__bloqueDataMap[b.id] = { tipo: b.tipo, nombre: b.nombre, descanso: b.descanso, duracion: b.duracion, notas: b.notas };
+  window.__ejercicioNombreMap = window.__ejercicioNombreMap || {};
   const tipo = b.tipo || 'libre';
   const ejercicios = (b.ejercicios || []).sort((a, c) => a.orden - c.orden);
   let extraInfo = '';
@@ -848,7 +849,7 @@ function renderBloqueAlumno(b) {
     thead = '<tr><th>#</th><th>Ejercicio</th><th>Series × Reps</th><th>Peso</th><th>Tutorial</th><th>Registro</th></tr>';
     tbody = ejercicios.map((e, i) => {
       const peso = e.notas?.startsWith('Peso:') ? e.notas.replace('Peso:','').trim() : (e.notas || '');
-      window.__ejercicioPesoNotaMap[e.id] = peso; return '<tr><td>' + numCircle(i) + '</td><td><span class="ex-name">' + esc(e.nombre) + '</span></td><td><span class="ex-amount">' + (e.series ? e.series+' × ' : '') + esc(e.reps||'') + '</span></td><td style="color:#999;font-size:0.85rem">' + esc(peso) + '</td><td>' + ytBtn(e.video_url) + '</td><td>' + pesoBtn(e.id) + '</td></tr>';
+      window.__ejercicioPesoNotaMap[e.id] = peso; window.__ejercicioNombreMap[e.id] = e.nombre; return '<tr><td>' + numCircle(i) + '</td><td><span class="ex-name">' + esc(e.nombre) + '</span></td><td><span class="ex-amount">' + (e.series ? e.series+' × ' : '') + esc(e.reps||'') + '</span></td><td style="color:#999;font-size:0.85rem">' + esc(peso) + '</td><td>' + ytBtn(e.video_url) + '</td><td>' + pesoBtn(e.id) + '</td></tr>';
     }).join('');
   } else if (tipo === 'muscu_open') {
     thead = '<tr><th>#</th><th>Ejercicio</th><th>Series × Reps</th><th>Peso</th><th>N°<br>Maq.</th><th>Timer</th><th>Tutorial</th><th>Registro</th></tr>';
@@ -860,7 +861,7 @@ function renderBloqueAlumno(b) {
       } else if (notas.startsWith('Maq:')) { maq = notas.replace('Maq:','').trim(); }
       else { peso = notas.startsWith('Peso:') ? notas.replace('Peso:','').trim() : notas; }
       const maqBadge = maq ? '<span style="background:rgba(212,196,74,0.15);color:#d4c44a;border:1px solid #d4c44a;border-radius:4px;padding:2px 8px;font-weight:700">' + esc(maq) + '</span>' : '—';
-      window.__ejercicioPesoNotaMap[e.id] = peso; window.__bloqueDescansoMap[b.id] = b.descanso; return '<tr><td>' + numCircle(i) + '</td><td><span class="ex-name">' + esc(e.nombre) + '</span></td><td><span class="ex-amount">' + (e.series ? e.series+' × ' : '') + esc(e.reps||'') + '</span></td><td style="color:#999;font-size:0.85rem">' + esc(peso) + '</td><td style="text-align:center">' + maqBadge + '</td><td>' + timerBtn(b.id) + '</td><td>' + ytBtn(e.video_url) + '</td><td>' + pesoBtn(e.id) + '</td></tr>';
+      window.__ejercicioPesoNotaMap[e.id] = peso; window.__ejercicioNombreMap[e.id] = e.nombre; window.__bloqueDescansoMap[b.id] = b.descanso; return '<tr><td>' + numCircle(i) + '</td><td><span class="ex-name">' + esc(e.nombre) + '</span></td><td><span class="ex-amount">' + (e.series ? e.series+' × ' : '') + esc(e.reps||'') + '</span></td><td style="color:#999;font-size:0.85rem">' + esc(peso) + '</td><td style="text-align:center">' + maqBadge + '</td><td>' + timerBtn(b.id) + '</td><td>' + ytBtn(e.video_url) + '</td><td>' + pesoBtn(e.id) + '</td></tr>';
     }).join('');
   } else {
     const repLabel = tipo === 'chipper' ? 'Cantidad' : 'Reps / Tiempo';
@@ -1406,10 +1407,16 @@ async function abrirRegistroPeso(ejercicioId) {
   document.getElementById('peso-input').value = '';
   document.getElementById('peso-historial').innerHTML = 'Cargando...';
   document.getElementById('peso-modal-overlay').style.display = 'flex';
+  const nombreEj = (window.__ejercicioNombreMap || {})[ejercicioId];
+  let idsCoincidentes = [ejercicioId];
+  if (nombreEj) {
+    const { data: ejMatch } = await sbClient.from('ejercicios').select('id').ilike('nombre', nombreEj);
+    if (ejMatch && ejMatch.length) idsCoincidentes = ejMatch.map(e => e.id);
+  }
   const { data, error } = await sbClient.from('registros_peso')
     .select('*')
     .eq('alumno_id', currentUser.id)
-    .eq('ejercicio_id', ejercicioId)
+    .in('ejercicio_id', idsCoincidentes)
     .order('fecha', { ascending: false });
   if (error) { document.getElementById('peso-historial').textContent = 'Error al cargar historial.'; return; }
   if (data && data.length) {
